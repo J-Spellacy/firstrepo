@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-
+# change this to be noisy data with a linear pattern
 X = np.random.randint(0, 100, 100)
 Y = np.random.randint(0, 100, 100)
 
@@ -28,12 +28,28 @@ def linear_reg(X, Y):
     for i in range(len(X)):
         # print(i)
         # print(j)
-        Y_hat[i] = np.mean(K_neighbor(i, X))
+        Y_hat[i] = np.mean(K_neighbor(i, Y))
         
     return Y_hat
 
 
-print(linear_reg(X, Y))
+Y_hat = linear_reg(X, Y)
 
 # create a scatter plot of X and Y and then add line graph of  linear_reg(X, Y)
+plt.figure(figsize=(10, 6))
+plt.xlim(0, 100)
+plt.ylim(0, 100)
+plt.xlabel('X-axis')
+plt.ylabel('Y-axis')
+plt.title('Scatter Plot and Linear Regression Line')
 
+# Add a scatter plot
+plt.scatter(X, Y, color='blue', label='Data Points')
+
+# Add a line graph with the same x but different y values
+plt.plot(X, Y_hat, color='red', label='Linear Regression Line')
+# Add a legend
+plt.legend()
+
+# Show the plot
+plt.show()
