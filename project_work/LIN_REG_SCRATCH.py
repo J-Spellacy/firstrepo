@@ -88,7 +88,7 @@ def beta_estimate_demonstration(X, Y, num_points = 100):
         for j in range(num_points):
             Y_hat = beta_0_estimates[j] + beta_1_estimates[i]*X
             RSS[i, j] += np.sum((Y-Y_hat)**2)
-            # print(RSS[i, j])
+ 
     beta_grid = np.meshgrid(beta_0_estimates, beta_1_estimates)
     return RSS, beta_grid
 
