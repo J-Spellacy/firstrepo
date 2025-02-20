@@ -33,8 +33,8 @@ if __name__ == "__main__":
         
     print(len(w_p_positions))
     
-    w_pawn_img = pygame.image.load(r"C:\Users\User\Documents\GitHub\firstrepo\project_work\pawn.png")
-    b_pawn_img = pygame.image.load(r"C:\Users\User\Documents\GitHub\firstrepo\project_work\b_pawn.png")
+    w_pawn_img = pygame.image.load(r"C:\Users\User\Documents\GitHub\firstrepo\project_work\queen_no_bg.png")
+    b_pawn_img = pygame.image.load(r"C:\Users\User\Documents\GitHub\firstrepo\project_work\b_queen_no_bg.png")
     
     # Define the dimensions of screen object
     screen = pygame.display.set_mode((640, 640))
