@@ -56,9 +56,9 @@ def remove_background(img, top_bottom = False):
     return img_new, img_check
 
 if __name__ == '__main__':
-    img = Image.open(r"C:\Users\User\Documents\GitHub\firstrepo\project_work\b_queen.png")
-    img_new, img_check = remove_background(img, top_bottom = False)
-    # img.show()
-    # img_new.show()
-    img_new.save(r"C:\Users\User\Documents\GitHub\firstrepo\project_work\b_queen_no_bg.png")
+    img = Image.open(r"C:\Users\User\Documents\GitHub\firstrepo\project_work\sprites\knight.png")
+    img_new, img_check = remove_background(img, top_bottom = True)
+    img.show()
+    img_new.show()
+    img_new.save(r"C:\Users\User\Documents\GitHub\firstrepo\project_work\sprites\no_backgrounds\knight_no_bg.png")
     
