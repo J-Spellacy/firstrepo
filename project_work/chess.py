@@ -1,6 +1,7 @@
 import pygame
 from pygame.locals import *
 import numpy as np
+import math
 import time
 import sys
 
@@ -31,6 +32,20 @@ class Square(pygame.sprite.Sprite):
             self.image.fill((50, 50, 50))
         # position of rectangle is defined in the top left corner same as for surface
         self.rect = self.image.get_rect(topleft = self.position)
+        
+    # def occupied(self):
+    #     if 
+    
+    def chk_occupied(self):
+        if event.type == MOUSEBUTTONUP and self.rect.collidepoint(mouse_pos):
+            print(pygame.sprite.spritecollide(self, pieces, False))
+    
+    def update(self):
+        self.chk_occupied()
+            
+        
+        
+        
         
 
 # defines the board which is currently not a sprite but will be maybe if the squares class can work with a drawn board (should do) later on
@@ -63,18 +78,30 @@ class pawn(pygame.sprite.Sprite):
     
     # allows the player to move the pieces
     def drag(self):
-        mouse_pos = pygame.mouse.get_pos()
         if self.rect.collidepoint(mouse_pos) and pygame.mouse.get_pressed()[0]:
             self.rect.center = (mouse_pos[0],mouse_pos[1])
             self.position = (mouse_pos[0]-32,mouse_pos[1]-32)
             self.gotten = True
-        else:
-            self.gotten = False
+        # else:
+        #     self.gotten = False
     
     # updates the sprite
     def update(self, got_piece):
         if got_piece == False or self.gotten:
             self.drag()
+        self.drop()
+        
+    def drop(self):
+        if event.type == MOUSEBUTTONUP and self.gotten:
+        # if pygame.mouse.get_pressed()[0] == False and self.gotten:
+            print('im working')
+            # for s in squares:
+            #     if s.rect.collidepoint(mouse_pos):
+            #         print(s.rect.center)
+            #         self.rect.center = s.rect.center
+            self.rect.topleft = (math.floor(mouse_pos[0]/64)*64,math.floor(mouse_pos[1]/64)*64) # dont need to add 64, 64 because division does not define 1 as 0
+            self.gotten = False
+            
 
 
 # rest of the pieces same structure as the pawn with their own seperate functions later down the line
@@ -92,17 +119,31 @@ class bishop(pygame.sprite.Sprite):
         
         self.rect = self.image.get_rect(topleft = self.position)
         
+    # allows the player to move the pieces
     def drag(self):
-        mouse_pos = pygame.mouse.get_pos()
         if self.rect.collidepoint(mouse_pos) and pygame.mouse.get_pressed()[0]:
             self.rect.center = (mouse_pos[0],mouse_pos[1])
             self.position = (mouse_pos[0]-32,mouse_pos[1]-32)
             self.gotten = True
-        else:
-            self.gotten = False
+        # else:
+        #     self.gotten = False
+    
+    # updates the sprite
     def update(self, got_piece):
         if got_piece == False or self.gotten:
             self.drag()
+        self.drop()
+        
+    def drop(self):
+        if event.type == MOUSEBUTTONUP and self.gotten:
+        # if pygame.mouse.get_pressed()[0] == False and self.gotten:
+            print('im working')
+            # for s in squares:
+            #     if s.rect.collidepoint(mouse_pos):
+            #         print(s.rect.center)
+            #         self.rect.center = s.rect.center
+            self.rect.topleft = (math.floor(mouse_pos[0]/64)*64,math.floor(mouse_pos[1]/64)*64) # dont need to add 64, 64 because division does not define 1 as 0
+            self.gotten = False
 
 class knight(pygame.sprite.Sprite):
     def __init__(self, colour: str, position: tuple):
@@ -118,17 +159,31 @@ class knight(pygame.sprite.Sprite):
         
         self.rect = self.image.get_rect(topleft = self.position)
     
+    # allows the player to move the pieces
     def drag(self):
-        mouse_pos = pygame.mouse.get_pos()
         if self.rect.collidepoint(mouse_pos) and pygame.mouse.get_pressed()[0]:
             self.rect.center = (mouse_pos[0],mouse_pos[1])
             self.position = (mouse_pos[0]-32,mouse_pos[1]-32)
             self.gotten = True
-        else:
-            self.gotten = False
+        # else:
+        #     self.gotten = False
+    
+    # updates the sprite
     def update(self, got_piece):
         if got_piece == False or self.gotten:
             self.drag()
+        self.drop()
+        
+    def drop(self):
+        if event.type == MOUSEBUTTONUP and self.gotten:
+        # if pygame.mouse.get_pressed()[0] == False and self.gotten:
+            print('im working')
+            # for s in squares:
+            #     if s.rect.collidepoint(mouse_pos):
+            #         print(s.rect.center)
+            #         self.rect.center = s.rect.center
+            self.rect.topleft = (math.floor(mouse_pos[0]/64)*64,math.floor(mouse_pos[1]/64)*64) # dont need to add 64, 64 because division does not define 1 as 0
+            self.gotten = False
         
 class rook(pygame.sprite.Sprite):
     def __init__(self, colour: str, position: tuple):
@@ -144,17 +199,31 @@ class rook(pygame.sprite.Sprite):
         
         self.rect = self.image.get_rect(topleft = self.position)
     
+    # allows the player to move the pieces
     def drag(self):
-        mouse_pos = pygame.mouse.get_pos()
         if self.rect.collidepoint(mouse_pos) and pygame.mouse.get_pressed()[0]:
             self.rect.center = (mouse_pos[0],mouse_pos[1])
             self.position = (mouse_pos[0]-32,mouse_pos[1]-32)
             self.gotten = True
-        else:
-            self.gotten = False
+        # else:
+        #     self.gotten = False
+    
+    # updates the sprite
     def update(self, got_piece):
         if got_piece == False or self.gotten:
             self.drag()
+        self.drop()
+        
+    def drop(self):
+        if event.type == MOUSEBUTTONUP and self.gotten:
+        # if pygame.mouse.get_pressed()[0] == False and self.gotten:
+            print('im working')
+            # for s in squares:
+            #     if s.rect.collidepoint(mouse_pos):
+            #         print(s.rect.center)
+            #         self.rect.center = s.rect.center
+            self.rect.topleft = (math.floor(mouse_pos[0]/64)*64,math.floor(mouse_pos[1]/64)*64) # dont need to add 64, 64 because division does not define 1 as 0
+            self.gotten = False
 
 class queen(pygame.sprite.Sprite):
     def __init__(self, colour: str, position: tuple):
@@ -170,17 +239,31 @@ class queen(pygame.sprite.Sprite):
         
         self.rect = self.image.get_rect(topleft = self.position)
     
+    # allows the player to move the pieces
     def drag(self):
-        mouse_pos = pygame.mouse.get_pos()
         if self.rect.collidepoint(mouse_pos) and pygame.mouse.get_pressed()[0]:
             self.rect.center = (mouse_pos[0],mouse_pos[1])
             self.position = (mouse_pos[0]-32,mouse_pos[1]-32)
             self.gotten = True
-        else:
-            self.gotten = False
+        # else:
+        #     self.gotten = False
+    
+    # updates the sprite
     def update(self, got_piece):
         if got_piece == False or self.gotten:
             self.drag()
+        self.drop()
+        
+    def drop(self):
+        if event.type == MOUSEBUTTONUP and self.gotten:
+        # if pygame.mouse.get_pressed()[0] == False and self.gotten:
+            print('im working')
+            # for s in squares:
+            #     if s.rect.collidepoint(mouse_pos):
+            #         print(s.rect.center)
+            #         self.rect.center = s.rect.center
+            self.rect.topleft = (math.floor(mouse_pos[0]/64)*64,math.floor(mouse_pos[1]/64)*64) # dont need to add 64, 64 because division does not define 1 as 0
+            self.gotten = False
         
 class king(pygame.sprite.Sprite):
     def __init__(self, colour: str, position: tuple):
@@ -196,17 +279,31 @@ class king(pygame.sprite.Sprite):
         
         self.rect = self.image.get_rect(topleft = self.position)
     
+    # allows the player to move the pieces
     def drag(self):
-        mouse_pos = pygame.mouse.get_pos()
         if self.rect.collidepoint(mouse_pos) and pygame.mouse.get_pressed()[0]:
             self.rect.center = (mouse_pos[0],mouse_pos[1])
             self.position = (mouse_pos[0]-32,mouse_pos[1]-32)
             self.gotten = True
-        else:
-            self.gotten = False
+        # else:
+        #     self.gotten = False
+    
+    # updates the sprite
     def update(self, got_piece):
         if got_piece == False or self.gotten:
             self.drag()
+        self.drop()
+        
+    def drop(self):
+        if event.type == MOUSEBUTTONUP and self.gotten:
+        # if pygame.mouse.get_pressed()[0] == False and self.gotten:
+            print('im working')
+            # for s in squares:
+            #     if s.rect.collidepoint(mouse_pos):
+            #         print(s.rect.center)
+            #         self.rect.center = s.rect.center
+            self.rect.topleft = (math.floor(mouse_pos[0]/64)*64,math.floor(mouse_pos[1]/64)*64) # dont need to add 64, 64 because division does not define 1 as 0
+            self.gotten = False
 
 ## main code loop 
 
@@ -263,12 +360,6 @@ if __name__ == "__main__":
         for event in pygame.event.get(): 
             if event.type == pygame.QUIT: 
                 exit = True
-            # if game_active:
-                
-                # for p in pieces:    
-                #     if p.rect.collidepoint(mouse_pos) and pygame.mouse.get_pressed()[0]:
-                #             print(mouse_pos)
-                #             p.position = (mouse_pos[0]-32,mouse_pos[1]-32)
             
         if game_active:
             # draw all elements
@@ -277,6 +368,7 @@ if __name__ == "__main__":
             squares.draw(screen)
             pieces.draw(screen)
             pieces.update(got_piece)
+            squares.update()
             got_piece = pygame.mouse.get_pressed()[0]
             
         pygame.display.update() 
