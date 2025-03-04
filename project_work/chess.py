@@ -33,28 +33,9 @@ class Square(pygame.sprite.Sprite):
             self.image.fill((50, 50, 50))
         # position of rectangle is defined in the top left corner same as for surface
         self.rect = self.image.get_rect(topleft = self.position)
-    
-    def chk_occupied(self, mouse_pos, event, pieces):
-        if event.type == MOUSEBUTTONUP and self.rect.collidepoint(mouse_pos):
-            if self.occupant:
-                for p in pygame.sprite.spritecollide(self, pieces, False):
-                    p.position = p.init_sqr
-                    print(p.init_sqr)
                 
-    
-    def update(self, mouse_pos, event, pieces):
-        self.piece_list = pygame.sprite.spritecollide(self, pieces, False)
-        self.curr_occupant(pieces)
-        if self.occupant:
-            self.chk_occupied(mouse_pos, event, pieces)
-            self.curr_occupant(pieces)
-        
-            
-    def curr_occupant(self, pieces):
-        if self.piece_list:
-            self.occupant = pygame.sprite.spritecollide(self, pieces, False)[0]
-        else:
-            self.occupant = None
+    def update(self, mouse_pos, event):
+        pass
 
 # defines the board which is currently not a sprite but will be maybe if the squares class can work with a drawn board (should do) later on
 class Board():
@@ -94,7 +75,7 @@ class pawn(pygame.sprite.Sprite):
             
 
     # updates the sprite
-    def update(self, got_piece, mouse_pos, event):
+    def update(self, got_piece, mouse_pos, event, squares):
         if got_piece == False:
             self.init_sqr = self.rect.topleft
             self.drag(mouse_pos, event)
@@ -106,7 +87,9 @@ class pawn(pygame.sprite.Sprite):
         if event.type == MOUSEBUTTONUP and self.gotten:
             self.rect.topleft = (math.floor(mouse_pos[0]/64)*64,math.floor(mouse_pos[1]/64)*64) # dont need to add 64, 64 because division does not define 1 as 0
             self.gotten = False
-            
+    
+    def get_curr_sqr(self, mouse_pos, event, squares):
+        self.current_sqr = 
 
 
 # rest of the pieces same structure as the pawn with their own seperate functions later down the line
@@ -351,8 +334,8 @@ def main():
                 exit = True
             
             if game_active:
-                pieces.update(got_piece, mouse_pos, event)
-                squares.update(mouse_pos, event, pieces)
+                squares.update(mouse_pos, event)
+                pieces.update(got_piece, mouse_pos, event, squares)
                 got_piece = pygame.mouse.get_pressed()[0]
                 
         pygame.display.update() 
