@@ -14,10 +14,6 @@ import sys
 # add checkmate screen
 # change .update() to make selective screen updates (more efficient i think)
 
-
-''' 
-coding chess game using pygame following this tutorial:https://levelup.gitconnected.com/chess-python-ca4532c7f5a4
-'''
 ## defining the board
 # defines the square as a surface with a rectangle for position detection later, 
 # might just use the actual position of the piece if thats more efficient down the line
@@ -66,30 +62,38 @@ class Piece(pygame.sprite.Sprite):
         self.init_sqr = self.rect.topleft
     
     # allows the player to move the pieces
-    def drag(self, mouse_pos, event):
+    def drag(self, mouse_pos, event, screen):
         if self.rect.collidepoint(mouse_pos) and pygame.mouse.get_pressed()[0]:
             self.rect.center = (mouse_pos[0],mouse_pos[1])
             self.position = (mouse_pos[0]-32,mouse_pos[1]-32)
+            pygame.draw.rect(screen, (255, 100, 100), (math.floor(mouse_pos[0]/64)*64,math.floor(mouse_pos[1]/64)*64, 64, 64), 3)
             self.gotten = True
-            
-
+    
     # updates the sprite
-    def update(self, got_piece, mouse_pos, event, squares, other_pieces):
+    def update(self, got_piece, mouse_pos, event, squares, other_pieces, screen):
         self.p_update(mouse_pos, event, squares, other_pieces)
-        if got_piece == False:
-            self.init_sqr = self.rect.topleft
-            self.drag(mouse_pos, event)
-        elif self.gotten:
-            self.drag(mouse_pos, event)
-        self.drop(mouse_pos, event)
+        if not got_piece or self.gotten:
+            self.drag(mouse_pos, event, screen)
+        self.drop(mouse_pos, event, other_pieces, screen)
         
-    def drop(self, mouse_pos, event):
+    def drop(self, mouse_pos, event, other_pieces, screen):
         if event.type == MOUSEBUTTONUP and self.gotten:
-            self.rect.topleft = (math.floor(mouse_pos[0]/64)*64,math.floor(mouse_pos[1]/64)*64) # dont need to add 64, 64 because division does not define 1 as 0
+            if not self.collision(other_pieces, screen, mouse_pos):
+                self.rect.topleft = (math.floor(mouse_pos[0]/64)*64,math.floor(mouse_pos[1]/64)*64) # dont need to add 64, 64 because division does not define 1 as 0
+                self.init_sqr = self.rect.topleft
+            else:
+                self.rect.topleft = self.init_sqr
+            
             self.gotten = False
             
-    # def get_curr_sqr(self, mouse_pos, event, squares):
-    #     self.current_sqr = 
+    def collision(self, other_pieces, screen, mouse_pos): # logic on this fixed by chatgpt lol thanks
+        collisions = pygame.sprite.spritecollide(self, self.groups()[0], dokill=False) # assumes 0 th group is its own colour pieces
+        collisions = [sprite for sprite in collisions if sprite != self]  
+        if collisions:
+            pygame.draw.rect(screen, (255, 100, 100), (self.init_sqr[0],self.init_sqr[1], 64, 64), 3)
+            return True
+        
+        return False
 
 # defines each piece by type, for later rule implementation per class
 class pawn(Piece):
@@ -144,37 +148,36 @@ def main():
     
     # defines the board
     board = Board()
-    board_positions = board.positions
     squares = pygame.sprite.Group()
     for x in range(8):
         for y in range(8):
             colour = "black" if (x + y) % 2 else "white"
-            squares.add(Square(colour, board_positions[x][y]))
+            squares.add(Square(colour, board.positions[x][y]))
 
     # places pieces initially
     w_pieces = pygame.sprite.Group()
     b_pieces = pygame.sprite.Group()
     for x in range(8):
-        w_pieces.add(pawn("white", board_positions[x][1], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
-        b_pieces.add(pawn("black", board_positions[x][6], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
+        w_pieces.add(pawn("white", board.positions[x][1], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
+        b_pieces.add(pawn("black", board.positions[x][6], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
     
-    w_pieces.add(rook("white", board_positions[0][0], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
-    w_pieces.add(rook("white", board_positions[7][0], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
-    w_pieces.add(knight("white", board_positions[1][0], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
-    w_pieces.add(knight("white", board_positions[6][0], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
-    w_pieces.add(queen("white", board_positions[3][0], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
-    w_pieces.add(king("white", board_positions[4][0], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
-    w_pieces.add(bishop("white", board_positions[2][0], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
-    w_pieces.add(bishop("white", board_positions[5][0], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
+    w_pieces.add(rook("white", board.positions[0][0], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
+    w_pieces.add(rook("white", board.positions[7][0], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
+    w_pieces.add(knight("white", board.positions[1][0], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
+    w_pieces.add(knight("white", board.positions[6][0], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
+    w_pieces.add(queen("white", board.positions[3][0], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
+    w_pieces.add(king("white", board.positions[4][0], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
+    w_pieces.add(bishop("white", board.positions[2][0], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
+    w_pieces.add(bishop("white", board.positions[5][0], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
     
-    b_pieces.add(rook("black", board_positions[0][7], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
-    b_pieces.add(rook("black", board_positions[7][7], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
-    b_pieces.add(knight("black", board_positions[1][7], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
-    b_pieces.add(knight("black", board_positions[6][7], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
-    b_pieces.add(queen("black", board_positions[3][7], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
-    b_pieces.add(king("black", board_positions[4][7], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
-    b_pieces.add(bishop("black", board_positions[2][7], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
-    b_pieces.add(bishop("black", board_positions[5][7], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
+    b_pieces.add(rook("black", board.positions[0][7], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
+    b_pieces.add(rook("black", board.positions[7][7], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
+    b_pieces.add(knight("black", board.positions[1][7], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
+    b_pieces.add(knight("black", board.positions[6][7], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
+    b_pieces.add(queen("black", board.positions[3][7], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
+    b_pieces.add(king("black", board.positions[4][7], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
+    b_pieces.add(bishop("black", board.positions[2][7], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
+    b_pieces.add(bishop("black", board.positions[5][7], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
     
     # initialises used params in loop
     got_piece = False
@@ -195,8 +198,8 @@ def main():
             
             if game_active:
                 squares.update(mouse_pos, event)
-                w_pieces.update(got_piece, mouse_pos, event, squares, b_pieces)
-                b_pieces.update(got_piece, mouse_pos, event, squares, w_pieces)
+                w_pieces.update(got_piece, mouse_pos, event, squares, b_pieces, screen)
+                b_pieces.update(got_piece, mouse_pos, event, squares, w_pieces, screen)
                 got_piece = pygame.mouse.get_pressed()[0]
                 
         pygame.display.update() 
