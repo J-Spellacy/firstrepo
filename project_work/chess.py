@@ -50,234 +50,90 @@ class Board():
 
 ## defining the pieces
 
+class Piece(pygame.sprite.Sprite):
+    def __init__(self, colour: str, position: tuple, w_image_address: str, b_image_address: str):
+        super(Piece, self).__init__()
+        
+        self.position = position
+        self.colour = colour
+        self.gotten = False
+        if self.colour == "white":
+            self.image = pygame.image.load(w_image_address).convert_alpha()
+        else:
+            self.image = pygame.image.load(b_image_address).convert_alpha()
+        
+        self.rect = self.image.get_rect(topleft = self.position)
+        self.init_sqr = self.rect.topleft
+    
+    # allows the player to move the pieces
+    def drag(self, mouse_pos, event):
+        if self.rect.collidepoint(mouse_pos) and pygame.mouse.get_pressed()[0]:
+            self.rect.center = (mouse_pos[0],mouse_pos[1])
+            self.position = (mouse_pos[0]-32,mouse_pos[1]-32)
+            self.gotten = True
+            
+
+    # updates the sprite
+    def update(self, got_piece, mouse_pos, event, squares, other_pieces):
+        self.p_update(mouse_pos, event, squares, other_pieces)
+        if got_piece == False:
+            self.init_sqr = self.rect.topleft
+            self.drag(mouse_pos, event)
+        elif self.gotten:
+            self.drag(mouse_pos, event)
+        self.drop(mouse_pos, event)
+        
+    def drop(self, mouse_pos, event):
+        if event.type == MOUSEBUTTONUP and self.gotten:
+            self.rect.topleft = (math.floor(mouse_pos[0]/64)*64,math.floor(mouse_pos[1]/64)*64) # dont need to add 64, 64 because division does not define 1 as 0
+            self.gotten = False
+            
+    # def get_curr_sqr(self, mouse_pos, event, squares):
+    #     self.current_sqr = 
+
 # defines each piece by type, for later rule implementation per class
-class pawn(pygame.sprite.Sprite):
-    def __init__(self, colour: str, position: tuple):
-        super(pawn, self).__init__()
-        
-        self.position = position
-        self.colour = colour
-        self.gotten = False
-        if self.colour == "white":
-            self.image = pygame.image.load(r"C:\Users\User\Documents\GitHub\firstrepo\project_work\sprites\no_backgrounds\pawn_no_bg.png").convert_alpha()
-        else:
-            self.image = pygame.image.load(r"C:\Users\User\Documents\GitHub\firstrepo\project_work\sprites\no_backgrounds\b_pawn_no_bg.png").convert_alpha()
-        
-        self.rect = self.image.get_rect(topleft = self.position)
-        self.init_sqr = self.rect.topleft
+class pawn(Piece):
+    def __init__(self, colour: str, position: tuple, w_image_address: str, b_image_address: str):
+        super(pawn, self).__init__(colour, position, w_image_address, b_image_address)
     
-    # allows the player to move the pieces
-    def drag(self, mouse_pos, event):
-        if self.rect.collidepoint(mouse_pos) and pygame.mouse.get_pressed()[0]:
-            self.rect.center = (mouse_pos[0],mouse_pos[1])
-            self.position = (mouse_pos[0]-32,mouse_pos[1]-32)
-            self.gotten = True
-            
+    def p_update(self, mouse_pos, event, squares, other_pieces):
+        pass
 
-    # updates the sprite
-    def update(self, got_piece, mouse_pos, event, squares):
-        if got_piece == False:
-            self.init_sqr = self.rect.topleft
-            self.drag(mouse_pos, event)
-        elif self.gotten:
-            self.drag(mouse_pos, event)
-        self.drop(mouse_pos, event)
+class bishop(Piece):
+    def __init__(self, colour: str, position: tuple, w_image_address: str, b_image_address: str):
+        super(bishop, self).__init__(colour, position, w_image_address, b_image_address)
+
+    def p_update(self, mouse_pos, event, squares, other_pieces):
+        pass
+
+class knight(Piece):
+    def __init__(self, colour: str, position: tuple, w_image_address: str, b_image_address: str):
+        super(knight, self).__init__(colour, position, w_image_address, b_image_address)
         
-    def drop(self, mouse_pos, event):
-        if event.type == MOUSEBUTTONUP and self.gotten:
-            self.rect.topleft = (math.floor(mouse_pos[0]/64)*64,math.floor(mouse_pos[1]/64)*64) # dont need to add 64, 64 because division does not define 1 as 0
-            self.gotten = False
+    def p_update(self, mouse_pos, event, squares, other_pieces):
+        pass
+
+class rook(Piece):
+    def __init__(self, colour: str, position: tuple, w_image_address: str, b_image_address: str):
+        super(rook, self).__init__(colour, position, w_image_address, b_image_address)
+
+    def p_update(self, mouse_pos, event, squares, other_pieces):
+        pass
     
-    def get_curr_sqr(self, mouse_pos, event, squares):
-        self.current_sqr = 
-
-
-# rest of the pieces same structure as the pawn with their own seperate functions later down the line
-class bishop(pygame.sprite.Sprite):
-    def __init__(self, colour: str, position: tuple):
-        super(bishop, self).__init__()
+class queen(Piece):
+    def __init__(self, colour: str, position: tuple, w_image_address: str, b_image_address: str):
+        super(queen, self).__init__(colour, position, w_image_address, b_image_address)
         
-        self.position = position
-        self.colour = colour
-        self.gotten = False
-        if self.colour == "white":
-            self.image = pygame.image.load(r"C:\Users\User\Documents\GitHub\firstrepo\project_work\sprites\no_backgrounds\bishop_no_bg.png").convert_alpha()
-        else:
-            self.image = pygame.image.load(r"C:\Users\User\Documents\GitHub\firstrepo\project_work\sprites\no_backgrounds\b_bishop_no_bg.png").convert_alpha()
-        
-        self.rect = self.image.get_rect(topleft = self.position)
-        self.init_sqr = self.rect.topleft
+    def p_update(self, mouse_pos, event, squares, other_pieces):
+        pass
+
+class king(Piece):
+    def __init__(self, colour: str, position: tuple, w_image_address: str, b_image_address: str):
+        super(king, self).__init__(colour, position, w_image_address, b_image_address)
+
+    def p_update(self, mouse_pos, event, squares, other_pieces):
+        pass
     
-    # allows the player to move the pieces
-    def drag(self, mouse_pos, event):
-        if self.rect.collidepoint(mouse_pos) and pygame.mouse.get_pressed()[0]:
-            self.rect.center = (mouse_pos[0],mouse_pos[1])
-            self.position = (mouse_pos[0]-32,mouse_pos[1]-32)
-            self.gotten = True
-            
-
-    # updates the sprite
-    def update(self, got_piece, mouse_pos, event):
-        if got_piece == False:
-            self.init_sqr = self.rect.topleft
-            self.drag(mouse_pos, event)
-        elif self.gotten:
-            self.drag(mouse_pos, event)
-        self.drop(mouse_pos, event)
-        
-    def drop(self, mouse_pos, event):
-        if event.type == MOUSEBUTTONUP and self.gotten:
-            self.rect.topleft = (math.floor(mouse_pos[0]/64)*64,math.floor(mouse_pos[1]/64)*64) # dont need to add 64, 64 because division does not define 1 as 0
-            self.gotten = False
-
-class knight(pygame.sprite.Sprite):
-    def __init__(self, colour: str, position: tuple):
-        super(knight, self).__init__()
-        
-        self.position = position
-        self.colour = colour
-        self.gotten = False
-        if self.colour == "white":
-            self.image = pygame.image.load(r"C:\Users\User\Documents\GitHub\firstrepo\project_work\sprites\no_backgrounds\knight_no_bg.png").convert_alpha()
-        else:
-            self.image = pygame.image.load(r"C:\Users\User\Documents\GitHub\firstrepo\project_work\sprites\no_backgrounds\b_knight_no_bg.png").convert_alpha()
-        
-        self.rect = self.image.get_rect(topleft = self.position)
-        self.init_sqr = self.rect.topleft
-    
-    # allows the player to move the pieces
-    def drag(self, mouse_pos, event):
-        if self.rect.collidepoint(mouse_pos) and pygame.mouse.get_pressed()[0]:
-            self.rect.center = (mouse_pos[0],mouse_pos[1])
-            self.position = (mouse_pos[0]-32,mouse_pos[1]-32)
-            self.gotten = True
-            
-
-    # updates the sprite
-    def update(self, got_piece, mouse_pos, event):
-        if got_piece == False:
-            self.init_sqr = self.rect.topleft
-            self.drag(mouse_pos, event)
-        elif self.gotten:
-            self.drag(mouse_pos, event)
-        self.drop(mouse_pos, event)
-        
-    def drop(self, mouse_pos, event):
-        if event.type == MOUSEBUTTONUP and self.gotten:
-            self.rect.topleft = (math.floor(mouse_pos[0]/64)*64,math.floor(mouse_pos[1]/64)*64) # dont need to add 64, 64 because division does not define 1 as 0
-            self.gotten = False
-        
-class rook(pygame.sprite.Sprite):
-    def __init__(self, colour: str, position: tuple):
-        super(rook, self).__init__()
-        
-        self.position = position
-        self.colour = colour
-        self.gotten = False
-        if self.colour == "white":
-            self.image = pygame.image.load(r"C:\Users\User\Documents\GitHub\firstrepo\project_work\sprites\no_backgrounds\rook_no_bg.png").convert_alpha()
-        else:
-            self.image = pygame.image.load(r"C:\Users\User\Documents\GitHub\firstrepo\project_work\sprites\no_backgrounds\b_rook_no_bg.png").convert_alpha()
-        
-        self.rect = self.image.get_rect(topleft = self.position)
-        self.init_sqr = self.rect.topleft
-    
-    # allows the player to move the pieces
-    def drag(self, mouse_pos, event):
-        if self.rect.collidepoint(mouse_pos) and pygame.mouse.get_pressed()[0]:
-            self.rect.center = (mouse_pos[0],mouse_pos[1])
-            self.position = (mouse_pos[0]-32,mouse_pos[1]-32)
-            self.gotten = True
-            
-
-    # updates the sprite
-    def update(self, got_piece, mouse_pos, event):
-        if got_piece == False:
-            self.init_sqr = self.rect.topleft
-            self.drag(mouse_pos, event)
-        elif self.gotten:
-            self.drag(mouse_pos, event)
-        self.drop(mouse_pos, event)
-        
-    def drop(self, mouse_pos, event):
-        if event.type == MOUSEBUTTONUP and self.gotten:
-            self.rect.topleft = (math.floor(mouse_pos[0]/64)*64,math.floor(mouse_pos[1]/64)*64) # dont need to add 64, 64 because division does not define 1 as 0
-            self.gotten = False
-
-class queen(pygame.sprite.Sprite):
-    def __init__(self, colour: str, position: tuple):
-        super(queen, self).__init__()
-        
-        self.position = position
-        self.colour = colour
-        self.gotten = False
-        if self.colour == "white":
-            self.image = pygame.image.load(r"C:\Users\User\Documents\GitHub\firstrepo\project_work\sprites\no_backgrounds\queen_no_bg.png").convert_alpha()
-        else:
-            self.image = pygame.image.load(r"C:\Users\User\Documents\GitHub\firstrepo\project_work\sprites\no_backgrounds\b_queen_no_bg.png").convert_alpha()
-        
-        self.rect = self.image.get_rect(topleft = self.position)
-        self.init_sqr = self.rect.topleft
-    
-    # allows the player to move the pieces
-    def drag(self, mouse_pos, event):
-        if self.rect.collidepoint(mouse_pos) and pygame.mouse.get_pressed()[0]:
-            self.rect.center = (mouse_pos[0],mouse_pos[1])
-            self.position = (mouse_pos[0]-32,mouse_pos[1]-32)
-            self.gotten = True
-            
-
-    # updates the sprite
-    def update(self, got_piece, mouse_pos, event):
-        if got_piece == False:
-            self.init_sqr = self.rect.topleft
-            self.drag(mouse_pos, event)
-        elif self.gotten:
-            self.drag(mouse_pos, event)
-        self.drop(mouse_pos, event)
-        
-    def drop(self, mouse_pos, event):
-        if event.type == MOUSEBUTTONUP and self.gotten:
-            self.rect.topleft = (math.floor(mouse_pos[0]/64)*64,math.floor(mouse_pos[1]/64)*64) # dont need to add 64, 64 because division does not define 1 as 0
-            self.gotten = False
-        
-class king(pygame.sprite.Sprite):
-    def __init__(self, colour: str, position: tuple):
-        super(king, self).__init__()
-        
-        self.position = position
-        self.colour = colour
-        self.gotten = False
-        if self.colour == "white":
-            self.image = pygame.image.load(r"C:\Users\User\Documents\GitHub\firstrepo\project_work\sprites\no_backgrounds\king_no_bg.png").convert_alpha()
-        else:
-            self.image = pygame.image.load(r"C:\Users\User\Documents\GitHub\firstrepo\project_work\sprites\no_backgrounds\b_king_no_bg.png").convert_alpha()
-        
-        self.rect = self.image.get_rect(topleft = self.position)
-        self.init_sqr = self.rect.topleft
-    
-    # allows the player to move the pieces
-    def drag(self, mouse_pos, event):
-        if self.rect.collidepoint(mouse_pos) and pygame.mouse.get_pressed()[0]:
-            self.rect.center = (mouse_pos[0],mouse_pos[1])
-            self.position = (mouse_pos[0]-32,mouse_pos[1]-32)
-            self.gotten = True
-            
-
-    # updates the sprite
-    def update(self, got_piece, mouse_pos, event):
-        if got_piece == False:
-            self.init_sqr = self.rect.topleft
-            self.drag(mouse_pos, event)
-        elif self.gotten:
-            self.drag(mouse_pos, event)
-        self.drop(mouse_pos, event)
-        
-    def drop(self, mouse_pos, event):
-        if event.type == MOUSEBUTTONUP and self.gotten:
-            self.rect.topleft = (math.floor(mouse_pos[0]/64)*64,math.floor(mouse_pos[1]/64)*64) # dont need to add 64, 64 because division does not define 1 as 0
-            self.gotten = False
-
 ## main code loop 
 
 def main():
@@ -294,28 +150,31 @@ def main():
         for y in range(8):
             colour = "black" if (x + y) % 2 else "white"
             squares.add(Square(colour, board_positions[x][y]))
-    
+
     # places pieces initially
-    pieces =  pygame.sprite.Group()
+    w_pieces = pygame.sprite.Group()
+    b_pieces = pygame.sprite.Group()
     for x in range(8):
-        pieces.add(pawn("white", board_positions[x][1]))
-        pieces.add(pawn("black", board_positions[x][6]))
-    pieces.add(rook("white", board_positions[0][0]))
-    pieces.add(rook("white", board_positions[7][0]))
-    pieces.add(rook("black", board_positions[0][7]))
-    pieces.add(rook("black", board_positions[7][7]))
-    pieces.add(knight("white", board_positions[1][0]))
-    pieces.add(knight("white", board_positions[6][0]))
-    pieces.add(knight("black", board_positions[1][7]))
-    pieces.add(knight("black", board_positions[6][7]))
-    pieces.add(queen("white", board_positions[3][0]))
-    pieces.add(queen("black", board_positions[3][7]))
-    pieces.add(king("white", board_positions[4][0]))
-    pieces.add(king("black", board_positions[4][7]))
-    pieces.add(bishop("white", board_positions[2][0]))
-    pieces.add(bishop("white", board_positions[5][0]))
-    pieces.add(bishop("black", board_positions[2][7]))
-    pieces.add(bishop("black", board_positions[5][7]))
+        w_pieces.add(pawn("white", board_positions[x][1], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
+        b_pieces.add(pawn("black", board_positions[x][6], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
+    
+    w_pieces.add(rook("white", board_positions[0][0], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
+    w_pieces.add(rook("white", board_positions[7][0], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
+    w_pieces.add(knight("white", board_positions[1][0], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
+    w_pieces.add(knight("white", board_positions[6][0], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
+    w_pieces.add(queen("white", board_positions[3][0], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
+    w_pieces.add(king("white", board_positions[4][0], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
+    w_pieces.add(bishop("white", board_positions[2][0], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
+    w_pieces.add(bishop("white", board_positions[5][0], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
+    
+    b_pieces.add(rook("black", board_positions[0][7], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
+    b_pieces.add(rook("black", board_positions[7][7], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
+    b_pieces.add(knight("black", board_positions[1][7], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
+    b_pieces.add(knight("black", board_positions[6][7], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
+    b_pieces.add(queen("black", board_positions[3][7], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
+    b_pieces.add(king("black", board_positions[4][7], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
+    b_pieces.add(bishop("black", board_positions[2][7], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
+    b_pieces.add(bishop("black", board_positions[5][7], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
     
     # initialises used params in loop
     got_piece = False
@@ -327,7 +186,8 @@ def main():
             # draw all elements
             screen.fill((100,100,100))
             squares.draw(screen)
-            pieces.draw(screen)
+            w_pieces.draw(screen)
+            b_pieces.draw(screen)
         mouse_pos = pygame.mouse.get_pos()
         for event in pygame.event.get(): 
             if event.type == pygame.QUIT: 
@@ -335,7 +195,8 @@ def main():
             
             if game_active:
                 squares.update(mouse_pos, event)
-                pieces.update(got_piece, mouse_pos, event, squares)
+                w_pieces.update(got_piece, mouse_pos, event, squares, b_pieces)
+                b_pieces.update(got_piece, mouse_pos, event, squares, w_pieces)
                 got_piece = pygame.mouse.get_pressed()[0]
                 
         pygame.display.update() 
