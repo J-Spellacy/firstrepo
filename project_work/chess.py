@@ -7,15 +7,20 @@ import sys
 
 ## to do list
 
-# find places for piece graveyard and update on_board state of other piece on take and move them to nearest available graveyard space
+# enforce these squares so that the same thing as collisions happen if a player picks somewhere outside of the specified squares
 # make it so you press the mouse button then you can drag it till you press it again instead of constantly holding it down
 # add timers for each player
 # add checkmate screen
 # change .update() to make selective screen updates (more efficient i think)
 
 
+# optional:
+
+# layer sprites so that the available squares is drawn beneath pieces
+
 ## bugs
 
+# flickering in the drag function 
 
 
 ## defining the board
@@ -34,7 +39,7 @@ class Square(pygame.sprite.Sprite):
         # position of rectangle is defined in the top left corner same as for surface
         self.rect = self.image.get_rect(topleft = self.position)
                 
-    def update(self, mouse_pos, event):
+    def update(self, mouse_pos):
         pass
 
 # defines the board which is currently not a sprite but will be maybe if the squares class can work with a drawn board (should do) later on
@@ -84,22 +89,26 @@ class Piece(pygame.sprite.Sprite):
         self.init_sqr = self.rect.topleft
     
     # allows the player to move the pieces
-    def drag(self, mouse_pos, event, screen):
+    def drag(self, mouse_pos, screen):
+        mouse_pos = pygame.mouse.get_pos()
         if self.rect.collidepoint(mouse_pos) and pygame.mouse.get_pressed()[0]:
-            self.rect.center = (mouse_pos[0],mouse_pos[1])
+            self.allowable_squares(screen)
+            pygame.draw.rect(screen, (255, 100, 100), (self.init_sqr[0],self.init_sqr[1], 64, 64), 3)
+            self.rect.center = mouse_pos
             self.position = (mouse_pos[0]-32,mouse_pos[1]-32)
             self.gotten = True
     
     # updates the sprite
-    def update(self, got_piece, mouse_pos, event, squares, other_pieces, screen, grave_pos):
+    def update(self, got_piece, mouse_pos, squares, other_pieces, screen, grave_pos):
         if self.on_board:
-            self.p_update(mouse_pos, event, squares, other_pieces)
+            # self.p_update(mouse_pos, event, squares, other_pieces)
             if not got_piece or self.gotten:
-                self.drag(mouse_pos, event, screen)
-            self.drop(mouse_pos, event, other_pieces, screen, grave_pos)
+                self.drag(mouse_pos, screen)
+            self.drop(mouse_pos, other_pieces, screen, grave_pos)
+            
         
-    def drop(self, mouse_pos, event, other_pieces, screen, graveyard):
-        if event.type == MOUSEBUTTONUP and self.gotten:
+    def drop(self, mouse_pos, other_pieces, screen, graveyard):
+        if not pygame.mouse.get_pressed()[0] and self.gotten:
             self.rect.topleft = (math.floor(mouse_pos[0]/64)*64,math.floor(mouse_pos[1]/64)*64)
             if not self.collision(screen):
                  # dont need to add 64, 64 because division does not define 1 as 0
@@ -122,8 +131,18 @@ class Piece(pygame.sprite.Sprite):
         take_col = pygame.sprite.spritecollide(self, other_pieces, dokill=False)
         if take_col:
             graveyard.die(take_col[0])
+            take_col[0].on_board = False
             return True
         return False
+
+    def allowable_squares(self, screen):
+        available_squares = self.p_update(self.init_sqr)
+        av_sqr_sur =  pygame.Surface((64,64))
+        av_sqr_sur.set_alpha(128)
+        av_sqr_sur.fill((150,200,255))
+        for sqr in available_squares:
+            screen.blit(av_sqr_sur, sqr)
+            # pygame.draw.rect(screen, (150, 200, 255, 10), (sqr[0], sqr[1], 64, 64), 5)
         
 def board_setup(positions, w_pieces, b_pieces):
     for x in range(8):
@@ -154,43 +173,85 @@ class pawn(Piece):
     def __init__(self, colour: str, position: tuple, w_image_address: str, b_image_address: str):
         super(pawn, self).__init__(colour, position, w_image_address, b_image_address)
     
-    def p_update(self, mouse_pos, event, squares, other_pieces):
-        pass
-
+    def p_update(self, sqr): # piecewise update function with specific piece rules
+        available_sqrs = [sqr]
+        if sqr[1]+64 >= 64 and sqr[1]+64 <= 512:
+            if self.colour == "white":
+                available_sqrs.append((sqr[0], sqr[1]+64))
+        if sqr[1]-64 >= 64 and sqr[1]-64 <= 512:
+            if self.colour == "black":
+                available_sqrs.append((sqr[0], sqr[1]-64))
+        return available_sqrs
+        
 class bishop(Piece):
     def __init__(self, colour: str, position: tuple, w_image_address: str, b_image_address: str):
         super(bishop, self).__init__(colour, position, w_image_address, b_image_address)
 
-    def p_update(self, mouse_pos, event, squares, other_pieces):
-        pass
+    def p_update(self, sqr): # piecewise update function with specific piece rules
+        available_sqrs = [sqr]
+        for j in range(-9,9):
+            if (sqr[0]+64*j <= 512 and sqr[0]+64*j >= 64) and (sqr[1]+64*j <= 512 and sqr[1]+64*j >= 64):
+                available_sqrs.append((sqr[0]+64*j, sqr[1]+64*j))
+            if (sqr[0]+64*j <= 512 and sqr[0]+64*j >= 64) and (sqr[1]-64*j <= 512 and sqr[1]-64*j >= 64):
+                available_sqrs.append((sqr[0]+64*j, sqr[1]-64*j))
+        return available_sqrs
 
 class knight(Piece):
     def __init__(self, colour: str, position: tuple, w_image_address: str, b_image_address: str):
         super(knight, self).__init__(colour, position, w_image_address, b_image_address)
         
-    def p_update(self, mouse_pos, event, squares, other_pieces):
-        pass
+    def p_update(self, sqr): # piecewise update function with specific piece rules
+        available_sqrs = [sqr]
+        for i in range(-1,2):
+            for j in range(-1,2):
+                if i and j:
+                    if (sqr[0]+j*128 >= 64 and sqr[0]+j*128 <= 512) and (sqr[1]+i*64 >= 64 and sqr[1]+i*64 <= 512):
+                        available_sqrs.append((sqr[0]+j*128, sqr[1]+i*64))
+                    if (sqr[0]+j*64 >= 64 and sqr[0]+j*64 <= 512) and (sqr[1]+i*128 >= 64 and sqr[1]+i*128 <= 512):
+                        available_sqrs.append((sqr[0]+j*64, sqr[1]+i*128))
+        return available_sqrs
 
 class rook(Piece):
     def __init__(self, colour: str, position: tuple, w_image_address: str, b_image_address: str):
         super(rook, self).__init__(colour, position, w_image_address, b_image_address)
 
-    def p_update(self, mouse_pos, event, squares, other_pieces):
-        pass
+    def p_update(self, sqr): # piecewise update function with specific piece rules
+        available_sqrs = [sqr]
+        for j in range(-9,9):
+            if sqr[0]+64*j <= 512 and sqr[0]+64*j >= 64:
+                available_sqrs.append((sqr[0]+64*j, sqr[1]))
+            if sqr[1]+64*j <= 512 and sqr[1]+64*j >= 64:
+                available_sqrs.append((sqr[0], sqr[1]+64*j))
+        return available_sqrs
     
 class queen(Piece):
     def __init__(self, colour: str, position: tuple, w_image_address: str, b_image_address: str):
         super(queen, self).__init__(colour, position, w_image_address, b_image_address)
         
-    def p_update(self, mouse_pos, event, squares, other_pieces):
-        pass
+    def p_update(self, sqr): # piecewise update function with specific piece rules
+        available_sqrs = [sqr]
+        for j in range(-9,9):
+            if sqr[0]+64*j <= 512 and sqr[0]+64*j >= 64:
+                available_sqrs.append((sqr[0]+64*j, sqr[1]))
+            if sqr[1]+64*j <= 512 and sqr[1]+64*j >= 64:
+                available_sqrs.append((sqr[0], sqr[1]+64*j))
+            if (sqr[0]+64*j <= 512 and sqr[0]+64*j >= 64) and (sqr[1]+64*j <= 512 and sqr[1]+64*j >= 64):
+                available_sqrs.append((sqr[0]+64*j, sqr[1]+64*j))
+            if (sqr[0]+64*j <= 512 and sqr[0]+64*j >= 64) and (sqr[1]-64*j <= 512 and sqr[1]-64*j >= 64):
+                available_sqrs.append((sqr[0]+64*j, sqr[1]-64*j))
+        return available_sqrs
 
 class king(Piece):
     def __init__(self, colour: str, position: tuple, w_image_address: str, b_image_address: str):
         super(king, self).__init__(colour, position, w_image_address, b_image_address)
 
-    def p_update(self, mouse_pos, event, squares, other_pieces):
-        pass
+    def p_update(self, sqr): # piecewise update function with specific piece rules
+        available_sqrs = [sqr]
+        for i in range(-1,2):
+            for j in range(-1,2):
+                if (sqr[0]+j*64 >= 64 and sqr[0]+j*64 <= 512) and (sqr[1]+i*64 >= 64 and sqr[1]+i*64 <= 512):
+                    available_sqrs.append((sqr[0]+j*64, sqr[1]+i*64))
+        return available_sqrs
     
 ## main code loop 
 
@@ -228,18 +289,16 @@ def main():
             w_pieces.draw(screen)
             b_pieces.draw(screen)
             pygame.draw.rect(screen, (255, 100, 100), (math.floor(mouse_pos[0]/64)*64,math.floor(mouse_pos[1]/64)*64, 64, 64), 3)
+            squares.update(mouse_pos)
+            w_pieces.update(got_piece, mouse_pos, squares, b_pieces, screen, graveyard)
+            b_pieces.update(got_piece, mouse_pos, squares, w_pieces, screen, graveyard)
+            got_piece = pygame.mouse.get_pressed()[0]
         for event in pygame.event.get(): 
             if event.type == pygame.QUIT: 
                 exit = True
-            
-            if game_active:
-                squares.update(mouse_pos, event)
-                w_pieces.update(got_piece, mouse_pos, event, squares, b_pieces, screen, graveyard)
-                b_pieces.update(got_piece, mouse_pos, event, squares, w_pieces, screen, graveyard)
-                got_piece = pygame.mouse.get_pressed()[0]
                 
         pygame.display.update() 
-        clock.tick(120)
+        clock.tick(60)
 
 ## running main code loop
 if __name__ == "__main__":
