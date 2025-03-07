@@ -7,13 +7,16 @@ import sys
 
 ## to do list
 
-# enforce these squares so that the same thing as collisions happen if a player picks somewhere outside of the specified squares
 # inactive taken pieces
 # add timers for each player
+# add turns
 # add checkmate screen and condition
 # board setup based on team choice also changes pawn directions
 # checking preventing all other moves
+# stop pieces apart from knight being able to jump over pieces
+# diagonal taking (pawns)
 
+# pawn first move (double jump)
 # castling
 # en passant
 
@@ -88,8 +91,10 @@ class Piece(pygame.sprite.Sprite):
         self.gotten = False
         if self.colour == "white":
             self.image = pygame.image.load(w_image_address).convert_alpha()
+            self.my_turn = True
         else:
             self.image = pygame.image.load(b_image_address).convert_alpha()
+            self.my_turn = False
         
         self.rect = self.image.get_rect(topleft = self.position)
         self.init_sqr = self.rect.topleft
@@ -120,6 +125,7 @@ class Piece(pygame.sprite.Sprite):
                  # dont need to add 64, 64 because division does not define 1 as 0
                 self.take(other_pieces, graveyard)
                 self.init_sqr = self.rect.topleft
+                self.my_turn = False
             else:
                 self.rect.topleft = self.init_sqr
             
@@ -128,6 +134,8 @@ class Piece(pygame.sprite.Sprite):
     def collision(self, screen): # logic on this fixed by chatgpt lol thanks
         collisions = pygame.sprite.spritecollide(self, self.groups()[0], dokill=False) # assumes 0 th group is its own colour pieces
         collisions = [sprite for sprite in collisions if sprite != self]  
+        if self.rect.topleft not in self.available_squares:
+            return True
         if collisions:
             pygame.draw.rect(screen, (255, 100, 100), (self.init_sqr[0],self.init_sqr[1], 64, 64), 3)
             return True
@@ -142,13 +150,12 @@ class Piece(pygame.sprite.Sprite):
         return False
 
     def allowable_squares(self, screen):
-        available_squares = self.p_update(self.init_sqr)
+        self.available_squares = self.p_update(self.init_sqr)
         av_sqr_sur =  pygame.Surface((64,64))
         av_sqr_sur.set_alpha(128)
         av_sqr_sur.fill((150,200,255))
-        for sqr in available_squares:
+        for sqr in self.available_squares:
             screen.blit(av_sqr_sur, sqr)
-            # pygame.draw.rect(screen, (150, 200, 255, 10), (sqr[0], sqr[1], 64, 64), 5)
         
 def board_setup(positions, w_pieces, b_pieces):
     for x in range(8):
@@ -298,6 +305,7 @@ def main():
             squares.update(mouse_pos)
             w_pieces.update(got_piece, mouse_pos, squares, b_pieces, screen, graveyard)
             b_pieces.update(got_piece, mouse_pos, squares, w_pieces, screen, graveyard)
+            print(w_pieces.sprites()[0].my_turn)
             got_piece = pygame.mouse.get_pressed()[0]
         for event in pygame.event.get(): 
             if event.type == pygame.QUIT: 
