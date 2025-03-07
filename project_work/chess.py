@@ -8,15 +8,21 @@ import sys
 ## to do list
 
 # enforce these squares so that the same thing as collisions happen if a player picks somewhere outside of the specified squares
-# make it so you press the mouse button then you can drag it till you press it again instead of constantly holding it down
+# inactive taken pieces
 # add timers for each player
-# add checkmate screen
-# change .update() to make selective screen updates (more efficient i think)
+# add checkmate screen and condition
+# board setup based on team choice also changes pawn directions
+# checking preventing all other moves
+
+# castling
+# en passant
 
 
 # optional:
 
 # layer sprites so that the available squares is drawn beneath pieces
+# make it so you press the mouse button then you can drag it till you press it again instead of constantly holding it down (configurable)
+# change .update() to make selective screen updates (more efficient i think)
 
 ## bugs
 
