@@ -7,9 +7,7 @@ import sys
 
 ## to do list
 
-# inactive taken pieces
 # add timers for each player
-# add turns
 # add checkmate screen and condition
 # board setup based on team choice also changes pawn directions
 # checking preventing all other moves
@@ -60,6 +58,16 @@ class Board():
                 board_positions[i][j] = ((i+1)*64, (j+1)*64)
         self.positions = board_positions
         # self.surface = pygame.image.load(r"C:\Users\User\Documents\GitHub\firstrepo\project_work\sprites\board.png").convert_alpha()
+    
+    def chk_mate_screen(self, screen, white_pieces, black_pieces):
+        chess_font = pygame.font.Font("C:\Windows\Fonts\Arial.ttf", 12)
+        if white_pieces.game_active:
+            win_str = 'white'
+        elif black_pieces.game_active:
+            win_str = 'black'
+        check_mate_text = chess_font.render(f'checkmate!!\n {win_str} wins!! \n well done!!', False, (64,64,64))
+        win_text_rect = check_mate_text.get_rect(center = (640, 320))
+        screen.blit(check_mate_text, win_text_rect)
 
 class Graveyard():
     def __init__(self):
@@ -74,6 +82,7 @@ class Graveyard():
     def die(self, piece: pygame.sprite.Sprite):
         piece.rect.topleft = self.positions[self.counter]
         self.add_to(piece)
+        piece.on_board = False
         self.counter += 1
     
     def add_to(self, piece):
@@ -91,10 +100,8 @@ class Piece(pygame.sprite.Sprite):
         self.gotten = False
         if self.colour == "white":
             self.image = pygame.image.load(w_image_address).convert_alpha()
-            self.my_turn = True
         else:
             self.image = pygame.image.load(b_image_address).convert_alpha()
-            self.my_turn = False
         
         self.rect = self.image.get_rect(topleft = self.position)
         self.init_sqr = self.rect.topleft
@@ -111,8 +118,8 @@ class Piece(pygame.sprite.Sprite):
     
     # updates the sprite
     def update(self, got_piece, mouse_pos, squares, other_pieces, screen, grave_pos):
-        if self.on_board:
-            # self.p_update(mouse_pos, event, squares, other_pieces)
+        self.p_update()
+        if self.on_board and self.groups()[0].my_turn:
             if not got_piece or self.gotten:
                 self.drag(mouse_pos, screen)
             self.drop(mouse_pos, other_pieces, screen, grave_pos)
@@ -125,7 +132,8 @@ class Piece(pygame.sprite.Sprite):
                  # dont need to add 64, 64 because division does not define 1 as 0
                 self.take(other_pieces, graveyard)
                 self.init_sqr = self.rect.topleft
-                self.my_turn = False
+                self.groups()[0].my_turn = False
+                other_pieces.my_turn = True
             else:
                 self.rect.topleft = self.init_sqr
             
@@ -145,12 +153,11 @@ class Piece(pygame.sprite.Sprite):
         take_col = pygame.sprite.spritecollide(self, other_pieces, dokill=False)
         if take_col:
             graveyard.die(take_col[0])
-            take_col[0].on_board = False
             return True
         return False
 
     def allowable_squares(self, screen):
-        self.available_squares = self.p_update(self.init_sqr)
+        self.available_squares = self.move_rules(self.init_sqr)
         av_sqr_sur =  pygame.Surface((64,64))
         av_sqr_sur.set_alpha(128)
         av_sqr_sur.fill((150,200,255))
@@ -159,26 +166,26 @@ class Piece(pygame.sprite.Sprite):
         
 def board_setup(positions, w_pieces, b_pieces):
     for x in range(8):
-        w_pieces.add(pawn("white", positions[x][1], 'project_work/sprites/no_backgrounds/pawn_no_bg.png','project_work/sprites/no_backgrounds/b_pawn_no_bg.png'))
-        b_pieces.add(pawn("black", positions[x][6], 'project_work/sprites/no_backgrounds/pawn_no_bg.png','project_work/sprites/no_backgrounds/b_pawn_no_bg.png'))
+        w_pieces.add(pawn("white", positions[x][6], 'project_work/sprites/no_backgrounds/pawn_no_bg.png','project_work/sprites/no_backgrounds/b_pawn_no_bg.png'))
+        b_pieces.add(pawn("black", positions[x][1], 'project_work/sprites/no_backgrounds/pawn_no_bg.png','project_work/sprites/no_backgrounds/b_pawn_no_bg.png'))
     
-    w_pieces.add(bishop("white", positions[2][0], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
-    w_pieces.add(bishop("white", positions[5][0], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
-    w_pieces.add(knight("white", positions[1][0], 'project_work/sprites/no_backgrounds/knight_no_bg.png','project_work/sprites/no_backgrounds/b_knight_no_bg.png'))
-    w_pieces.add(knight("white", positions[6][0], 'project_work/sprites/no_backgrounds/knight_no_bg.png','project_work/sprites/no_backgrounds/b_knight_no_bg.png'))
-    w_pieces.add(rook("white", positions[0][0], 'project_work/sprites/no_backgrounds/rook_no_bg.png','project_work/sprites/no_backgrounds/b_rook_no_bg.png'))
-    w_pieces.add(rook("white", positions[7][0], 'project_work/sprites/no_backgrounds/rook_no_bg.png','project_work/sprites/no_backgrounds/b_rook_no_bg.png'))
-    w_pieces.add(queen("white", positions[4][0], 'project_work/sprites/no_backgrounds/queen_no_bg.png','project_work/sprites/no_backgrounds/b_queen_no_bg.png'))
-    w_pieces.add(king("white", positions[3][0], 'project_work/sprites/no_backgrounds/king_no_bg.png','project_work/sprites/no_backgrounds/b_king_no_bg.png'))
+    w_pieces.add(bishop("white", positions[2][7], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
+    w_pieces.add(bishop("white", positions[5][7], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
+    w_pieces.add(knight("white", positions[1][7], 'project_work/sprites/no_backgrounds/knight_no_bg.png','project_work/sprites/no_backgrounds/b_knight_no_bg.png'))
+    w_pieces.add(knight("white", positions[6][7], 'project_work/sprites/no_backgrounds/knight_no_bg.png','project_work/sprites/no_backgrounds/b_knight_no_bg.png'))
+    w_pieces.add(rook("white", positions[0][7], 'project_work/sprites/no_backgrounds/rook_no_bg.png','project_work/sprites/no_backgrounds/b_rook_no_bg.png'))
+    w_pieces.add(rook("white", positions[7][7], 'project_work/sprites/no_backgrounds/rook_no_bg.png','project_work/sprites/no_backgrounds/b_rook_no_bg.png'))
+    w_pieces.add(queen("white", positions[4][7], 'project_work/sprites/no_backgrounds/queen_no_bg.png','project_work/sprites/no_backgrounds/b_queen_no_bg.png'))
+    w_pieces.add(king("white", positions[3][7], 'project_work/sprites/no_backgrounds/king_no_bg.png','project_work/sprites/no_backgrounds/b_king_no_bg.png'))
     
-    b_pieces.add(bishop("black", positions[2][7], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
-    b_pieces.add(bishop("black", positions[5][7], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
-    b_pieces.add(knight("black", positions[1][7], 'project_work/sprites/no_backgrounds/knight_no_bg.png','project_work/sprites/no_backgrounds/b_knight_no_bg.png'))
-    b_pieces.add(knight("black", positions[6][7], 'project_work/sprites/no_backgrounds/knight_no_bg.png','project_work/sprites/no_backgrounds/b_knight_no_bg.png'))
-    b_pieces.add(rook("black", positions[0][7], 'project_work/sprites/no_backgrounds/rook_no_bg.png','project_work/sprites/no_backgrounds/b_rook_no_bg.png'))
-    b_pieces.add(rook("black", positions[7][7], 'project_work/sprites/no_backgrounds/rook_no_bg.png','project_work/sprites/no_backgrounds/b_rook_no_bg.png'))
-    b_pieces.add(queen("black", positions[4][7], 'project_work/sprites/no_backgrounds/queen_no_bg.png','project_work/sprites/no_backgrounds/b_queen_no_bg.png'))
-    b_pieces.add(king("black", positions[3][7], 'project_work/sprites/no_backgrounds/king_no_bg.png','project_work/sprites/no_backgrounds/b_king_no_bg.png'))
+    b_pieces.add(bishop("black", positions[2][0], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
+    b_pieces.add(bishop("black", positions[5][0], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
+    b_pieces.add(knight("black", positions[1][0], 'project_work/sprites/no_backgrounds/knight_no_bg.png','project_work/sprites/no_backgrounds/b_knight_no_bg.png'))
+    b_pieces.add(knight("black", positions[6][0], 'project_work/sprites/no_backgrounds/knight_no_bg.png','project_work/sprites/no_backgrounds/b_knight_no_bg.png'))
+    b_pieces.add(rook("black", positions[0][0], 'project_work/sprites/no_backgrounds/rook_no_bg.png','project_work/sprites/no_backgrounds/b_rook_no_bg.png'))
+    b_pieces.add(rook("black", positions[7][0], 'project_work/sprites/no_backgrounds/rook_no_bg.png','project_work/sprites/no_backgrounds/b_rook_no_bg.png'))
+    b_pieces.add(queen("black", positions[4][0], 'project_work/sprites/no_backgrounds/queen_no_bg.png','project_work/sprites/no_backgrounds/b_queen_no_bg.png'))
+    b_pieces.add(king("black", positions[3][0], 'project_work/sprites/no_backgrounds/king_no_bg.png','project_work/sprites/no_backgrounds/b_king_no_bg.png'))
     
     
 # defines each piece by type, for later rule implementation per class
@@ -186,35 +193,42 @@ class pawn(Piece):
     def __init__(self, colour: str, position: tuple, w_image_address: str, b_image_address: str):
         super(pawn, self).__init__(colour, position, w_image_address, b_image_address)
     
-    def p_update(self, sqr): # piecewise update function with specific piece rules
-        available_sqrs = [sqr]
+    def move_rules(self, sqr): # piecewise update function with specific piece rules
+        available_sqrs = []
         if sqr[1]+64 >= 64 and sqr[1]+64 <= 512:
             if self.colour == "white":
-                available_sqrs.append((sqr[0], sqr[1]+64))
+                available_sqrs.append((sqr[0], sqr[1]-64))
         if sqr[1]-64 >= 64 and sqr[1]-64 <= 512:
             if self.colour == "black":
-                available_sqrs.append((sqr[0], sqr[1]-64))
+                available_sqrs.append((sqr[0], sqr[1]+64))
         return available_sqrs
+    
+    def p_update(self): # piecewise update function
+        pass
         
 class bishop(Piece):
     def __init__(self, colour: str, position: tuple, w_image_address: str, b_image_address: str):
         super(bishop, self).__init__(colour, position, w_image_address, b_image_address)
 
-    def p_update(self, sqr): # piecewise update function with specific piece rules
-        available_sqrs = [sqr]
+    def move_rules(self, sqr): # piecewise update function with specific piece rules
+        available_sqrs = []
         for j in range(-9,9):
-            if (sqr[0]+64*j <= 512 and sqr[0]+64*j >= 64) and (sqr[1]+64*j <= 512 and sqr[1]+64*j >= 64):
-                available_sqrs.append((sqr[0]+64*j, sqr[1]+64*j))
-            if (sqr[0]+64*j <= 512 and sqr[0]+64*j >= 64) and (sqr[1]-64*j <= 512 and sqr[1]-64*j >= 64):
-                available_sqrs.append((sqr[0]+64*j, sqr[1]-64*j))
+            if j:
+                if (sqr[0]+64*j <= 512 and sqr[0]+64*j >= 64) and (sqr[1]+64*j <= 512 and sqr[1]+64*j >= 64):
+                    available_sqrs.append((sqr[0]+64*j, sqr[1]+64*j))
+                if (sqr[0]+64*j <= 512 and sqr[0]+64*j >= 64) and (sqr[1]-64*j <= 512 and sqr[1]-64*j >= 64):
+                    available_sqrs.append((sqr[0]+64*j, sqr[1]-64*j))
         return available_sqrs
+    
+    def p_update(self): # piecewise update function
+        pass
 
 class knight(Piece):
     def __init__(self, colour: str, position: tuple, w_image_address: str, b_image_address: str):
         super(knight, self).__init__(colour, position, w_image_address, b_image_address)
         
-    def p_update(self, sqr): # piecewise update function with specific piece rules
-        available_sqrs = [sqr]
+    def move_rules(self, sqr): # piecewise update function with specific piece rules
+        available_sqrs = []
         for i in range(-1,2):
             for j in range(-1,2):
                 if i and j:
@@ -223,49 +237,66 @@ class knight(Piece):
                     if (sqr[0]+j*64 >= 64 and sqr[0]+j*64 <= 512) and (sqr[1]+i*128 >= 64 and sqr[1]+i*128 <= 512):
                         available_sqrs.append((sqr[0]+j*64, sqr[1]+i*128))
         return available_sqrs
+    
+    def p_update(self): # piecewise update function
+        pass
 
 class rook(Piece):
     def __init__(self, colour: str, position: tuple, w_image_address: str, b_image_address: str):
         super(rook, self).__init__(colour, position, w_image_address, b_image_address)
 
-    def p_update(self, sqr): # piecewise update function with specific piece rules
-        available_sqrs = [sqr]
+    def move_rules(self, sqr): # piecewise update function with specific piece rules
+        available_sqrs = []
         for j in range(-9,9):
-            if sqr[0]+64*j <= 512 and sqr[0]+64*j >= 64:
-                available_sqrs.append((sqr[0]+64*j, sqr[1]))
-            if sqr[1]+64*j <= 512 and sqr[1]+64*j >= 64:
-                available_sqrs.append((sqr[0], sqr[1]+64*j))
+            if j:
+                if sqr[0]+64*j <= 512 and sqr[0]+64*j >= 64:
+                    available_sqrs.append((sqr[0]+64*j, sqr[1]))
+                if sqr[1]+64*j <= 512 and sqr[1]+64*j >= 64:
+                    available_sqrs.append((sqr[0], sqr[1]+64*j))
         return available_sqrs
+    
+    def p_update(self): # piecewise update function
+        pass
     
 class queen(Piece):
     def __init__(self, colour: str, position: tuple, w_image_address: str, b_image_address: str):
         super(queen, self).__init__(colour, position, w_image_address, b_image_address)
         
-    def p_update(self, sqr): # piecewise update function with specific piece rules
-        available_sqrs = [sqr]
+    def move_rules(self, sqr): # piecewise update function with specific piece rules
+        available_sqrs = []
         for j in range(-9,9):
-            if sqr[0]+64*j <= 512 and sqr[0]+64*j >= 64:
-                available_sqrs.append((sqr[0]+64*j, sqr[1]))
-            if sqr[1]+64*j <= 512 and sqr[1]+64*j >= 64:
-                available_sqrs.append((sqr[0], sqr[1]+64*j))
-            if (sqr[0]+64*j <= 512 and sqr[0]+64*j >= 64) and (sqr[1]+64*j <= 512 and sqr[1]+64*j >= 64):
-                available_sqrs.append((sqr[0]+64*j, sqr[1]+64*j))
-            if (sqr[0]+64*j <= 512 and sqr[0]+64*j >= 64) and (sqr[1]-64*j <= 512 and sqr[1]-64*j >= 64):
-                available_sqrs.append((sqr[0]+64*j, sqr[1]-64*j))
+            if j:
+                if sqr[0]+64*j <= 512 and sqr[0]+64*j >= 64:
+                    available_sqrs.append((sqr[0]+64*j, sqr[1]))
+                if sqr[1]+64*j <= 512 and sqr[1]+64*j >= 64:
+                    available_sqrs.append((sqr[0], sqr[1]+64*j))
+                if (sqr[0]+64*j <= 512 and sqr[0]+64*j >= 64) and (sqr[1]+64*j <= 512 and sqr[1]+64*j >= 64):
+                    available_sqrs.append((sqr[0]+64*j, sqr[1]+64*j))
+                if (sqr[0]+64*j <= 512 and sqr[0]+64*j >= 64) and (sqr[1]-64*j <= 512 and sqr[1]-64*j >= 64):
+                    available_sqrs.append((sqr[0]+64*j, sqr[1]-64*j))
         return available_sqrs
+
+    def p_update(self): # piecewise update function
+        pass
 
 class king(Piece):
     def __init__(self, colour: str, position: tuple, w_image_address: str, b_image_address: str):
         super(king, self).__init__(colour, position, w_image_address, b_image_address)
 
-    def p_update(self, sqr): # piecewise update function with specific piece rules
-        available_sqrs = [sqr]
+    def move_rules(self, sqr): # specific piece rules
+        available_sqrs = []
         for i in range(-1,2):
             for j in range(-1,2):
-                if (sqr[0]+j*64 >= 64 and sqr[0]+j*64 <= 512) and (sqr[1]+i*64 >= 64 and sqr[1]+i*64 <= 512):
+                if not i and not j:
+                    pass
+                elif (sqr[0]+j*64 >= 64 and sqr[0]+j*64 <= 512) and (sqr[1]+i*64 >= 64 and sqr[1]+i*64 <= 512):
                     available_sqrs.append((sqr[0]+j*64, sqr[1]+i*64))
         return available_sqrs
     
+    def p_update(self): # piecewise update function
+        if self.on_board == False:
+            self.groups()[0].game_active = False
+            
 ## main code loop 
 
 def main():
@@ -287,15 +318,18 @@ def main():
     w_pieces = pygame.sprite.Group()
     b_pieces = pygame.sprite.Group()
     board_setup(board.positions, w_pieces, b_pieces)
+    w_pieces.my_turn = True
+    b_pieces.my_turn = False
     
     # initialises used params in loop
     got_piece = False
     exit = False
-    game_active = True
+    w_pieces.game_active = True
+    b_pieces.game_active = True
     ## running the game
     while not exit: 
         mouse_pos = pygame.mouse.get_pos()
-        if game_active:
+        if w_pieces.game_active and b_pieces.game_active:
             # draw all elements
             screen.fill((100,100,100))
             squares.draw(screen)
@@ -305,8 +339,10 @@ def main():
             squares.update(mouse_pos)
             w_pieces.update(got_piece, mouse_pos, squares, b_pieces, screen, graveyard)
             b_pieces.update(got_piece, mouse_pos, squares, w_pieces, screen, graveyard)
-            print(w_pieces.sprites()[0].my_turn)
             got_piece = pygame.mouse.get_pressed()[0]
+        else:
+            screen.fill((10,100,10))
+            board.chk_mate_screen(screen, w_pieces, b_pieces)
         for event in pygame.event.get(): 
             if event.type == pygame.QUIT: 
                 exit = True
