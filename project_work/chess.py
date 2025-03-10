@@ -8,7 +8,6 @@ import sys
 ## to do list
 
 # add timers for each player
-# add checkmate screen and condition
 # board setup based on team choice also changes pawn directions
 # checking preventing all other moves
 # stop pieces apart from knight being able to jump over pieces
@@ -59,15 +58,31 @@ class Board():
         self.positions = board_positions
         # self.surface = pygame.image.load(r"C:\Users\User\Documents\GitHub\firstrepo\project_work\sprites\board.png").convert_alpha()
     
-    def chk_mate_screen(self, screen, white_pieces, black_pieces):
-        chess_font = pygame.font.Font("C:\Windows\Fonts\Arial.ttf", 12)
+    def chk_mate_screen(self, screen, white_pieces, black_pieces, font, font2):
         if white_pieces.game_active:
             win_str = 'white'
         elif black_pieces.game_active:
             win_str = 'black'
-        check_mate_text = chess_font.render(f'checkmate!!\n {win_str} wins!! \n well done!!', False, (64,64,64))
-        win_text_rect = check_mate_text.get_rect(center = (640, 320))
+        check_mate_text = font.render(f'checkmate!!  {win_str} wins!!  well done!!', False, (0,0,0))
+        win_text_rect = check_mate_text.get_rect(center = (640, 180))
         screen.blit(check_mate_text, win_text_rect)
+        rst_button_surf = pygame.image.load('project_work/sprites/button.png').convert_alpha()
+        self.rst_button_rect = rst_button_surf.get_rect(center = (640, 320))
+        screen.blit(rst_button_surf, self.rst_button_rect)
+        rst_txt_surf = font2.render('restart?', False, (64,64,64))
+        rst_txt_rect = rst_txt_surf.get_rect(center = (640, 320))
+        screen.blit(rst_txt_surf, rst_txt_rect)
+    
+    def restart_game(self, white_pieces, black_pieces, mouse_pos):
+        if self.rst_button_rect.collidepoint(mouse_pos) and pygame.mouse.get_pressed()[0]:
+            for p in black_pieces:
+                p.on_board = True
+                p.rect.topleft = p.init_pos
+            for p in white_pieces:
+                p.on_board = True
+                p.rect.topleft = p.init_pos
+            white_pieces.game_active = True
+            black_pieces.game_active = True
 
 class Graveyard():
     def __init__(self):
@@ -96,6 +111,7 @@ class Piece(pygame.sprite.Sprite):
         super(Piece, self).__init__()
         self.on_board = True
         self.position = position
+        self.init_pos = position
         self.colour = colour
         self.gotten = False
         if self.colour == "white":
@@ -113,7 +129,6 @@ class Piece(pygame.sprite.Sprite):
             self.allowable_squares(screen)
             pygame.draw.rect(screen, (255, 100, 100), (self.init_sqr[0],self.init_sqr[1], 64, 64), 3)
             self.rect.center = mouse_pos
-            self.position = (mouse_pos[0]-32,mouse_pos[1]-32)
             self.gotten = True
     
     # updates the sprite
@@ -198,9 +213,13 @@ class pawn(Piece):
         if sqr[1]+64 >= 64 and sqr[1]+64 <= 512:
             if self.colour == "white":
                 available_sqrs.append((sqr[0], sqr[1]-64))
+                if sqr[1] == 448:
+                    available_sqrs.append((sqr[0], sqr[1]-128))
         if sqr[1]-64 >= 64 and sqr[1]-64 <= 512:
             if self.colour == "black":
                 available_sqrs.append((sqr[0], sqr[1]+64))
+                if sqr[1] == 128:
+                    available_sqrs.append((sqr[0], sqr[1]+128))
         return available_sqrs
     
     def p_update(self): # piecewise update function
@@ -297,13 +316,17 @@ class king(Piece):
         if self.on_board == False:
             self.groups()[0].game_active = False
             
+            
 ## main code loop 
 
 def main():
+    pygame.init()
     # sets up screen and moving time
     screen = pygame.display.set_mode((1280, 640))
     clock = pygame.time.Clock()
     pygame.display.set_caption("The Board") 
+    chess_font = pygame.font.Font(None, 64)
+    chess_font_sml = pygame.font.Font(None, 32)
     
     # defines the board
     board = Board()
@@ -331,7 +354,7 @@ def main():
         mouse_pos = pygame.mouse.get_pos()
         if w_pieces.game_active and b_pieces.game_active:
             # draw all elements
-            screen.fill((100,100,100))
+            screen.fill((50,100,50))
             squares.draw(screen)
             w_pieces.draw(screen)
             b_pieces.draw(screen)
@@ -341,8 +364,9 @@ def main():
             b_pieces.update(got_piece, mouse_pos, squares, w_pieces, screen, graveyard)
             got_piece = pygame.mouse.get_pressed()[0]
         else:
-            screen.fill((10,100,10))
-            board.chk_mate_screen(screen, w_pieces, b_pieces)
+            screen.fill((50,100,50))
+            board.chk_mate_screen(screen, w_pieces, b_pieces, chess_font, chess_font_sml)
+            board.restart_game(w_pieces, b_pieces, mouse_pos)
         for event in pygame.event.get(): 
             if event.type == pygame.QUIT: 
                 exit = True
