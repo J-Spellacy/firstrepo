@@ -7,7 +7,7 @@ import sys
 
 ## to do list
 
-# add timers for each player
+# update timers to  only count on turns
 # board setup based on team choice also changes pawn directions
 # checking preventing all other moves
 # stop pieces apart from knight being able to jump over pieces
@@ -82,7 +82,25 @@ class Board():
                 p.on_board = True
                 p.rect.topleft = p.init_pos
             white_pieces.game_active = True
+            white_pieces.my_turn = True
             black_pieces.game_active = True
+            black_pieces.my_turn = False
+
+
+class Timer():
+    def __init__(self, font, pos, screen, pieces):
+        current_time = 600-int(round(pygame.time.get_ticks()/1000))
+        current_min = int(np.floor(current_time/60))
+        current_sec = current_time - current_min*60
+        surf = pygame.image.load('project_work/sprites/button.png').convert_alpha()
+        rect = surf.get_rect(center = pos)
+        screen.blit(surf, rect)
+        timer_txt = font.render(f'{current_min}:{current_sec}', False, (64,64,64))
+        timer_rect = timer_txt.get_rect(center = pos)
+        screen.blit(timer_txt, timer_rect)
+        if current_time == 0:
+            pieces.game_active = False
+        
 
 class Graveyard():
     def __init__(self):
@@ -344,6 +362,9 @@ def main():
     w_pieces.my_turn = True
     b_pieces.my_turn = False
     
+    b_timer_pos = (64,32)
+    w_timer_pos = (588,608)
+    
     # initialises used params in loop
     got_piece = False
     exit = False
@@ -353,8 +374,11 @@ def main():
     while not exit: 
         mouse_pos = pygame.mouse.get_pos()
         if w_pieces.game_active and b_pieces.game_active:
+            
             # draw all elements
             screen.fill((50,100,50))
+            Timer(chess_font_sml, w_timer_pos, screen, w_pieces)
+            Timer(chess_font_sml, b_timer_pos, screen, b_pieces)
             squares.draw(screen)
             w_pieces.draw(screen)
             b_pieces.draw(screen)
