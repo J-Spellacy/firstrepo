@@ -86,21 +86,39 @@ class Board():
             black_pieces.game_active = True
             black_pieces.my_turn = False
 
+# not working hurumph
+class Timer(pygame.sprite.Sprite):
+    def __init__(self, pos: tuple):
+        super(Timer, self).__init__()
+        self.pos = pos
+        self.base_image = pygame.image.load('project_work/sprites/button.png').convert_alpha()
+        self.image = self.base_image.copy()
+        self.rect = self.image.get_rect(center = self.pos)
+        self.total_time = 600
+        self.end_time = 0
+        self.current_tick = 0
 
-class Timer():
-    def __init__(self, font, pos, screen, pieces):
-        current_time = 600-int(round(pygame.time.get_ticks()/1000))
-        current_min = int(np.floor(current_time/60))
-        current_sec = current_time - current_min*60
-        surf = pygame.image.load('project_work/sprites/button.png').convert_alpha()
-        rect = surf.get_rect(center = pos)
-        screen.blit(surf, rect)
-        timer_txt = font.render(f'{current_min}:{current_sec}', False, (64,64,64))
-        timer_rect = timer_txt.get_rect(center = pos)
-        screen.blit(timer_txt, timer_rect)
-        if current_time == 0:
-            pieces.game_active = False
-        
+    def update(self, font, pieces, screen):
+        if pieces.my_turn:
+            self.current_tick = int(round(pygame.time.get_ticks()/1000))
+            self.time_since = self.current_tick - self.end_time
+            self.current_time = self.total_time - self.time_since
+            self.current_min = int(np.floor(self.current_time/60))
+            self.current_sec = self.current_time - self.current_min*60
+            self.timer_txt = font.render(f'{self.current_min}:{self.current_sec}', False, (64,64,64))
+            self.timer_txt_rect = self.timer_txt.get_rect(center = self.rect.center)
+            screen.blit(self.timer_txt, self.timer_txt_rect)
+            
+            if self.current_time == 0:
+                pieces.game_active = False
+        else:
+            self.end_time = self.current_tick
+    
+    def set_time(self):
+        self.total_time = self.current_time
+    
+    def reset_time(self):
+        self.total_time = 600
 
 class Graveyard():
     def __init__(self):
@@ -363,13 +381,19 @@ def main():
     b_pieces.my_turn = False
     
     b_timer_pos = (64,32)
-    w_timer_pos = (588,608)
+    w_timer_pos = (576,608)
     
     # initialises used params in loop
     got_piece = False
     exit = False
     w_pieces.game_active = True
     b_pieces.game_active = True
+    w_timer = Timer(w_timer_pos)
+    b_timer = Timer(b_timer_pos)
+    W_Timers = pygame.sprite.Group()
+    B_Timers = pygame.sprite.Group()
+    W_Timers.add(w_timer)
+    B_Timers.add(b_timer)
     ## running the game
     while not exit: 
         mouse_pos = pygame.mouse.get_pos()
@@ -377,15 +401,20 @@ def main():
             
             # draw all elements
             screen.fill((50,100,50))
-            Timer(chess_font_sml, w_timer_pos, screen, w_pieces)
-            Timer(chess_font_sml, b_timer_pos, screen, b_pieces)
             squares.draw(screen)
             w_pieces.draw(screen)
             b_pieces.draw(screen)
+            B_Timers.draw(screen)
+            W_Timers.draw(screen)
+            
+            
+            
             pygame.draw.rect(screen, (255, 100, 100), (math.floor(mouse_pos[0]/64)*64,math.floor(mouse_pos[1]/64)*64, 64, 64), 3)
             squares.update(mouse_pos)
             w_pieces.update(got_piece, mouse_pos, squares, b_pieces, screen, graveyard)
             b_pieces.update(got_piece, mouse_pos, squares, w_pieces, screen, graveyard)
+            W_Timers.update(chess_font_sml, w_pieces, screen)
+            B_Timers.update(chess_font_sml, b_pieces, screen)
             got_piece = pygame.mouse.get_pressed()[0]
         else:
             screen.fill((50,100,50))
