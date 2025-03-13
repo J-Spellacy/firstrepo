@@ -7,7 +7,7 @@ import sys
 
 ## to do list
 
-# update timers to  only count on turns
+
 # board setup based on team choice also changes pawn directions
 # checking preventing all other moves
 # stop pieces apart from knight being able to jump over pieces
@@ -26,7 +26,7 @@ import sys
 
 ## bugs
 
-# flickering in the drag function 
+# piece lags behind mouse and stops drag()  till  mouse rejoins it
 
 
 ## defining the board
@@ -75,50 +75,49 @@ class Board():
     
     def restart_game(self, white_pieces, black_pieces, mouse_pos):
         if self.rst_button_rect.collidepoint(mouse_pos) and pygame.mouse.get_pressed()[0]:
-            for p in black_pieces:
-                p.on_board = True
-                p.rect.topleft = p.init_pos
-            for p in white_pieces:
-                p.on_board = True
-                p.rect.topleft = p.init_pos
-            white_pieces.game_active = True
-            white_pieces.my_turn = True
-            black_pieces.game_active = True
-            black_pieces.my_turn = False
+            return True
+            # for p in black_pieces:
+            #     p.on_board = True
+            #     p.rect.topleft = p.init_pos
+            # for p in white_pieces:
+            #     p.on_board = True
+            #     p.rect.topleft = p.init_pos
+            # white_pieces.game_active = True
+            # white_pieces.my_turn = True
+            # black_pieces.game_active = True
+            # black_pieces.my_turn = False
+            # w_timer.reset_time(time_passed)
+            # b_timer.reset_time(time_passed)
 
 # not working hurumph
 class Timer(pygame.sprite.Sprite):
-    def __init__(self, pos: tuple):
+    def __init__(self, pos: tuple, pieces, time_between_turns):
         super(Timer, self).__init__()
         self.pos = pos
         self.base_image = pygame.image.load('project_work/sprites/button.png').convert_alpha()
         self.image = self.base_image.copy()
         self.rect = self.image.get_rect(center = self.pos)
-        self.total_time = 600
-        self.end_time = 0
-        self.current_tick = 0
+        self.total_time = 30
+        self.current_time = 0
+        self.end_time = time_between_turns
+        self.in_turn = pieces.my_turn
 
-    def update(self, font, pieces, screen):
+    def update(self, font, pieces, screen, time_passed):
         if pieces.my_turn:
-            self.current_tick = int(round(pygame.time.get_ticks()/1000))
-            self.time_since = self.current_tick - self.end_time
-            self.current_time = self.total_time - self.time_since
+            self.current_time = self.total_time - (time_passed - self.end_time)
             self.current_min = int(np.floor(self.current_time/60))
             self.current_sec = self.current_time - self.current_min*60
             self.timer_txt = font.render(f'{self.current_min}:{self.current_sec}', False, (64,64,64))
             self.timer_txt_rect = self.timer_txt.get_rect(center = self.rect.center)
             screen.blit(self.timer_txt, self.timer_txt_rect)
-            
+            self.in_turn = True
             if self.current_time == 0:
                 pieces.game_active = False
         else:
-            self.end_time = self.current_tick
-    
-    def set_time(self):
-        self.total_time = self.current_time
-    
-    def reset_time(self):
-        self.total_time = 600
+            if self.in_turn:
+                self.total_time = self.current_time
+                self.in_turn = False
+            self.end_time = time_passed
 
 class Graveyard():
     def __init__(self):
@@ -355,7 +354,7 @@ class king(Piece):
             
 ## main code loop 
 
-def main():
+def main(time_between_games = 0):
     pygame.init()
     # sets up screen and moving time
     screen = pygame.display.set_mode((1280, 640))
@@ -388,8 +387,8 @@ def main():
     exit = False
     w_pieces.game_active = True
     b_pieces.game_active = True
-    w_timer = Timer(w_timer_pos)
-    b_timer = Timer(b_timer_pos)
+    w_timer = Timer(w_timer_pos, w_pieces, time_between_games)
+    b_timer = Timer(b_timer_pos, b_pieces, time_between_games)
     W_Timers = pygame.sprite.Group()
     B_Timers = pygame.sprite.Group()
     W_Timers.add(w_timer)
@@ -397,6 +396,7 @@ def main():
     ## running the game
     while not exit: 
         mouse_pos = pygame.mouse.get_pos()
+        time_passed = int(round(pygame.time.get_ticks()/1000))
         if w_pieces.game_active and b_pieces.game_active:
             
             # draw all elements
@@ -413,22 +413,25 @@ def main():
             squares.update(mouse_pos)
             w_pieces.update(got_piece, mouse_pos, squares, b_pieces, screen, graveyard)
             b_pieces.update(got_piece, mouse_pos, squares, w_pieces, screen, graveyard)
-            W_Timers.update(chess_font_sml, w_pieces, screen)
-            B_Timers.update(chess_font_sml, b_pieces, screen)
+            W_Timers.update(chess_font_sml, w_pieces, screen, time_passed)
+            B_Timers.update(chess_font_sml, b_pieces, screen, time_passed)
             got_piece = pygame.mouse.get_pressed()[0]
         else:
             screen.fill((50,100,50))
             board.chk_mate_screen(screen, w_pieces, b_pieces, chess_font, chess_font_sml)
-            board.restart_game(w_pieces, b_pieces, mouse_pos)
+            if board.restart_game(w_pieces, b_pieces, mouse_pos):
+                return True
         for event in pygame.event.get(): 
             if event.type == pygame.QUIT: 
-                exit = True
+                return False
                 
         pygame.display.update() 
         clock.tick(60)
 
 ## running main code loop
 if __name__ == "__main__":
-    main()
+    restart = main()
+    while restart:
+        restart = main(time_between_games=int(round(pygame.time.get_ticks()/1000)))
     
     
