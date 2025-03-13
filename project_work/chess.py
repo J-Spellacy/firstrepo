@@ -73,21 +73,9 @@ class Board():
         rst_txt_rect = rst_txt_surf.get_rect(center = (640, 320))
         screen.blit(rst_txt_surf, rst_txt_rect)
     
-    def restart_game(self, white_pieces, black_pieces, mouse_pos):
+    def restart_game(self, mouse_pos):
         if self.rst_button_rect.collidepoint(mouse_pos) and pygame.mouse.get_pressed()[0]:
             return True
-            # for p in black_pieces:
-            #     p.on_board = True
-            #     p.rect.topleft = p.init_pos
-            # for p in white_pieces:
-            #     p.on_board = True
-            #     p.rect.topleft = p.init_pos
-            # white_pieces.game_active = True
-            # white_pieces.my_turn = True
-            # black_pieces.game_active = True
-            # black_pieces.my_turn = False
-            # w_timer.reset_time(time_passed)
-            # b_timer.reset_time(time_passed)
 
 # not working hurumph
 class Timer(pygame.sprite.Sprite):
@@ -97,7 +85,7 @@ class Timer(pygame.sprite.Sprite):
         self.base_image = pygame.image.load('project_work/sprites/button.png').convert_alpha()
         self.image = self.base_image.copy()
         self.rect = self.image.get_rect(center = self.pos)
-        self.total_time = 30
+        self.total_time = 600
         self.current_time = 0
         self.end_time = time_between_turns
         self.in_turn = pieces.my_turn
@@ -107,7 +95,10 @@ class Timer(pygame.sprite.Sprite):
             self.current_time = self.total_time - (time_passed - self.end_time)
             self.current_min = int(np.floor(self.current_time/60))
             self.current_sec = self.current_time - self.current_min*60
-            self.timer_txt = font.render(f'{self.current_min}:{self.current_sec}', False, (64,64,64))
+            if self.current_sec < 10:
+                self.timer_txt = font.render(f'{self.current_min}:0{self.current_sec}', False, (64,64,64))
+            else:
+                self.timer_txt = font.render(f'{self.current_min}:{self.current_sec}', False, (64,64,64))
             self.timer_txt_rect = self.timer_txt.get_rect(center = self.rect.center)
             screen.blit(self.timer_txt, self.timer_txt_rect)
             self.in_turn = True
@@ -158,10 +149,10 @@ class Piece(pygame.sprite.Sprite):
         self.init_sqr = self.rect.topleft
     
     # allows the player to move the pieces
-    def drag(self, mouse_pos, screen):
+    def drag(self, mouse_pos, screen, other_pieces):
         mouse_pos = pygame.mouse.get_pos()
         if self.rect.collidepoint(mouse_pos) and pygame.mouse.get_pressed()[0]:
-            self.allowable_squares(screen)
+            self.allowable_squares(screen, other_pieces)
             pygame.draw.rect(screen, (255, 100, 100), (self.init_sqr[0],self.init_sqr[1], 64, 64), 3)
             self.rect.center = mouse_pos
             self.gotten = True
@@ -171,7 +162,7 @@ class Piece(pygame.sprite.Sprite):
         self.p_update()
         if self.on_board and self.groups()[0].my_turn:
             if not got_piece or self.gotten:
-                self.drag(mouse_pos, screen)
+                self.drag(mouse_pos, screen, other_pieces)
             self.drop(mouse_pos, other_pieces, screen, grave_pos)
             
         
@@ -206,8 +197,8 @@ class Piece(pygame.sprite.Sprite):
             return True
         return False
 
-    def allowable_squares(self, screen):
-        self.available_squares = self.move_rules(self.init_sqr)
+    def allowable_squares(self, screen, other_pieces):
+        self.available_squares = self.move_rules(self.init_sqr, other_pieces)
         av_sqr_sur =  pygame.Surface((64,64))
         av_sqr_sur.set_alpha(128)
         av_sqr_sur.fill((150,200,255))
@@ -236,24 +227,30 @@ def board_setup(positions, w_pieces, b_pieces):
     b_pieces.add(rook("black", positions[7][0], 'project_work/sprites/no_backgrounds/rook_no_bg.png','project_work/sprites/no_backgrounds/b_rook_no_bg.png'))
     b_pieces.add(queen("black", positions[4][0], 'project_work/sprites/no_backgrounds/queen_no_bg.png','project_work/sprites/no_backgrounds/b_queen_no_bg.png'))
     b_pieces.add(king("black", positions[3][0], 'project_work/sprites/no_backgrounds/king_no_bg.png','project_work/sprites/no_backgrounds/b_king_no_bg.png'))
-    
+
+def square_occupation(sqr, pieces):
+        for piece in pieces.sprites():
+            piece_here = piece.rect.collidepoint(sqr)
+            if piece_here:
+                return True
+        return False
     
 # defines each piece by type, for later rule implementation per class
 class pawn(Piece):
     def __init__(self, colour: str, position: tuple, w_image_address: str, b_image_address: str):
         super(pawn, self).__init__(colour, position, w_image_address, b_image_address)
     
-    def move_rules(self, sqr): # piecewise update function with specific piece rules
+    def move_rules(self, sqr, other_pieces): # piecewise update function with specific piece rules
         available_sqrs = []
-        if sqr[1]+64 >= 64 and sqr[1]+64 <= 512:
-            if self.colour == "white":
-                available_sqrs.append((sqr[0], sqr[1]-64))
-                if sqr[1] == 448:
-                    available_sqrs.append((sqr[0], sqr[1]-128))
         if sqr[1]-64 >= 64 and sqr[1]-64 <= 512:
-            if self.colour == "black":
+            if self.colour == "white" and not square_occupation((sqr[0], sqr[1]-64), other_pieces):
+                available_sqrs.append((sqr[0], sqr[1]-64))
+                if sqr[1] == 448 and not square_occupation((sqr[0], sqr[1]-128), other_pieces):
+                    available_sqrs.append((sqr[0], sqr[1]-128))
+        if sqr[1]+64 >= 64 and sqr[1]+64 <= 512:
+            if self.colour == "black" and not square_occupation((sqr[0], sqr[1]+64), other_pieces):
                 available_sqrs.append((sqr[0], sqr[1]+64))
-                if sqr[1] == 128:
+                if sqr[1] == 128 and not square_occupation((sqr[0], sqr[1]+128), other_pieces):
                     available_sqrs.append((sqr[0], sqr[1]+128))
         return available_sqrs
     
@@ -264,7 +261,7 @@ class bishop(Piece):
     def __init__(self, colour: str, position: tuple, w_image_address: str, b_image_address: str):
         super(bishop, self).__init__(colour, position, w_image_address, b_image_address)
 
-    def move_rules(self, sqr): # piecewise update function with specific piece rules
+    def move_rules(self, sqr, other_pieces): # piecewise update function with specific piece rules
         available_sqrs = []
         for j in range(-9,9):
             if j:
@@ -281,7 +278,7 @@ class knight(Piece):
     def __init__(self, colour: str, position: tuple, w_image_address: str, b_image_address: str):
         super(knight, self).__init__(colour, position, w_image_address, b_image_address)
         
-    def move_rules(self, sqr): # piecewise update function with specific piece rules
+    def move_rules(self, sqr, other_pieces): # piecewise update function with specific piece rules
         available_sqrs = []
         for i in range(-1,2):
             for j in range(-1,2):
@@ -299,7 +296,7 @@ class rook(Piece):
     def __init__(self, colour: str, position: tuple, w_image_address: str, b_image_address: str):
         super(rook, self).__init__(colour, position, w_image_address, b_image_address)
 
-    def move_rules(self, sqr): # piecewise update function with specific piece rules
+    def move_rules(self, sqr, other_pieces): # piecewise update function with specific piece rules
         available_sqrs = []
         for j in range(-9,9):
             if j:
@@ -316,7 +313,7 @@ class queen(Piece):
     def __init__(self, colour: str, position: tuple, w_image_address: str, b_image_address: str):
         super(queen, self).__init__(colour, position, w_image_address, b_image_address)
         
-    def move_rules(self, sqr): # piecewise update function with specific piece rules
+    def move_rules(self, sqr, other_pieces): # piecewise update function with specific piece rules
         available_sqrs = []
         for j in range(-9,9):
             if j:
@@ -337,7 +334,7 @@ class king(Piece):
     def __init__(self, colour: str, position: tuple, w_image_address: str, b_image_address: str):
         super(king, self).__init__(colour, position, w_image_address, b_image_address)
 
-    def move_rules(self, sqr): # specific piece rules
+    def move_rules(self, sqr, other_pieces): # specific piece rules
         available_sqrs = []
         for i in range(-1,2):
             for j in range(-1,2):
@@ -350,7 +347,8 @@ class king(Piece):
     def p_update(self): # piecewise update function
         if self.on_board == False:
             self.groups()[0].game_active = False
-            
+
+
             
 ## main code loop 
 
@@ -419,7 +417,7 @@ def main(time_between_games = 0):
         else:
             screen.fill((50,100,50))
             board.chk_mate_screen(screen, w_pieces, b_pieces, chess_font, chess_font_sml)
-            if board.restart_game(w_pieces, b_pieces, mouse_pos):
+            if board.restart_game(mouse_pos):
                 return True
         for event in pygame.event.get(): 
             if event.type == pygame.QUIT: 
