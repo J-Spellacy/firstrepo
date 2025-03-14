@@ -7,14 +7,10 @@ import sys
 
 ## to do list
 
-
-# board setup based on team choice also changes pawn directions
 # checking preventing all other moves
-
-
 # castling
 # en passant
-
+# board setup based on team choice also changes pawn directions
 
 # optional:
 
@@ -159,6 +155,8 @@ class Piece(pygame.sprite.Sprite):
     # updates the sprite
     def update(self, got_piece, mouse_pos, squares, other_pieces, screen, grave_pos):
         self.p_update()
+        if self.type == 'king':
+            print(self.check_check(self.init_sqr, other_pieces))
         if self.on_board and self.groups()[0].my_turn:
             if not got_piece or self.gotten:
                 self.drag(mouse_pos, screen, other_pieces)
@@ -216,8 +214,8 @@ def board_setup(positions, w_pieces, b_pieces):
     w_pieces.add(knight("white", positions[6][7], 'project_work/sprites/no_backgrounds/knight_no_bg.png','project_work/sprites/no_backgrounds/b_knight_no_bg.png'))
     w_pieces.add(rook("white", positions[0][7], 'project_work/sprites/no_backgrounds/rook_no_bg.png','project_work/sprites/no_backgrounds/b_rook_no_bg.png'))
     w_pieces.add(rook("white", positions[7][7], 'project_work/sprites/no_backgrounds/rook_no_bg.png','project_work/sprites/no_backgrounds/b_rook_no_bg.png'))
-    w_pieces.add(queen("white", positions[4][7], 'project_work/sprites/no_backgrounds/queen_no_bg.png','project_work/sprites/no_backgrounds/b_queen_no_bg.png'))
-    w_pieces.add(king("white", positions[3][7], 'project_work/sprites/no_backgrounds/king_no_bg.png','project_work/sprites/no_backgrounds/b_king_no_bg.png'))
+    w_pieces.add(queen("white", positions[3][7], 'project_work/sprites/no_backgrounds/queen_no_bg.png','project_work/sprites/no_backgrounds/b_queen_no_bg.png'))
+    w_pieces.add(king("white", positions[4][7], 'project_work/sprites/no_backgrounds/king_no_bg.png','project_work/sprites/no_backgrounds/b_king_no_bg.png'))
     
     b_pieces.add(bishop("black", positions[2][0], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
     b_pieces.add(bishop("black", positions[5][0], 'project_work/sprites/no_backgrounds/bishop_no_bg.png','project_work/sprites/no_backgrounds/b_bishop_no_bg.png'))
@@ -225,8 +223,8 @@ def board_setup(positions, w_pieces, b_pieces):
     b_pieces.add(knight("black", positions[6][0], 'project_work/sprites/no_backgrounds/knight_no_bg.png','project_work/sprites/no_backgrounds/b_knight_no_bg.png'))
     b_pieces.add(rook("black", positions[0][0], 'project_work/sprites/no_backgrounds/rook_no_bg.png','project_work/sprites/no_backgrounds/b_rook_no_bg.png'))
     b_pieces.add(rook("black", positions[7][0], 'project_work/sprites/no_backgrounds/rook_no_bg.png','project_work/sprites/no_backgrounds/b_rook_no_bg.png'))
-    b_pieces.add(queen("black", positions[4][0], 'project_work/sprites/no_backgrounds/queen_no_bg.png','project_work/sprites/no_backgrounds/b_queen_no_bg.png'))
-    b_pieces.add(king("black", positions[3][0], 'project_work/sprites/no_backgrounds/king_no_bg.png','project_work/sprites/no_backgrounds/b_king_no_bg.png'))
+    b_pieces.add(queen("black", positions[3][0], 'project_work/sprites/no_backgrounds/queen_no_bg.png','project_work/sprites/no_backgrounds/b_queen_no_bg.png'))
+    b_pieces.add(king("black", positions[4][0], 'project_work/sprites/no_backgrounds/king_no_bg.png','project_work/sprites/no_backgrounds/b_king_no_bg.png'))
 
 def square_occupation(sqr, pieces, self = None):
         for piece in pieces:
@@ -239,6 +237,7 @@ def square_occupation(sqr, pieces, self = None):
 # defines each piece by type, for later rule implementation per class
 class pawn(Piece):
     def __init__(self, colour: str, position: tuple, w_image_address: str, b_image_address: str):
+        self.type = 'pawn'
         super(pawn, self).__init__(colour, position, w_image_address, b_image_address)
     
     def move_rules(self, sqr, other_pieces): # piecewise update function with specific piece rules
@@ -271,6 +270,7 @@ class pawn(Piece):
         
 class bishop(Piece):
     def __init__(self, colour: str, position: tuple, w_image_address: str, b_image_address: str):
+        self.type = 'bishop'
         super(bishop, self).__init__(colour, position, w_image_address, b_image_address)
 
     def move_rules(self, sqr, other_pieces): # piecewise update function with specific piece rules
@@ -318,6 +318,7 @@ class bishop(Piece):
 
 class knight(Piece):
     def __init__(self, colour: str, position: tuple, w_image_address: str, b_image_address: str):
+        self.type = 'knight'
         super(knight, self).__init__(colour, position, w_image_address, b_image_address)
         
     def move_rules(self, sqr, other_pieces): # piecewise update function with specific piece rules
@@ -336,6 +337,7 @@ class knight(Piece):
 
 class rook(Piece):
     def __init__(self, colour: str, position: tuple, w_image_address: str, b_image_address: str):
+        self.type = 'rook'
         super(rook, self).__init__(colour, position, w_image_address, b_image_address)
 
     def move_rules(self, sqr, other_pieces): # piecewise update function with specific piece rules
@@ -382,6 +384,7 @@ class rook(Piece):
     
 class queen(Piece):
     def __init__(self, colour: str, position: tuple, w_image_address: str, b_image_address: str):
+        self.type = 'queen'
         super(queen, self).__init__(colour, position, w_image_address, b_image_address)
         
     def move_rules(self, sqr, other_pieces): # piecewise update function with specific piece rules
@@ -462,6 +465,7 @@ class queen(Piece):
 
 class king(Piece):
     def __init__(self, colour: str, position: tuple, w_image_address: str, b_image_address: str):
+        self.type = 'king'
         super(king, self).__init__(colour, position, w_image_address, b_image_address)
 
     def move_rules(self, sqr, other_pieces): # specific piece rules
@@ -471,20 +475,25 @@ class king(Piece):
             for j in range(-1,2):
                 if not i and not j:
                     pass
-                elif (sqr[0]+j*64 >= 64 and sqr[0]+j*64 <= 512) and (sqr[1]+i*64 >= 64 and sqr[1]+i*64 <= 512) and not square_occupation((sqr[0]+j*64, sqr[1]+i*64), pieces_list, self):
-                    available_sqrs.append((sqr[0]+j*64, sqr[1]+i*64))
+                elif (sqr[0]+j*64 >= 64 and sqr[0]+j*64 <= 512) and (sqr[1]+i*64 >= 64 and sqr[1]+i*64 <= 512):
+                    if not square_occupation((sqr[0]+j*64, sqr[1]+i*64), self.groups()[0].sprites(), self):
+                        available_sqrs.append((sqr[0]+j*64, sqr[1]+i*64))
         return available_sqrs
     
     def p_update(self): # piecewise update function
         if self.on_board == False:
             self.groups()[0].game_active = False
 
-    def castle(self, sqr, other_pieces):
-        for piece in other_pieces:
-            piece_here = piece.rect.collidepoint(sqr)
-            if piece_here:
-                if piece.has_moved and self.has_moved:
-                    
+    def castle(self, mouse_pos, other_pieces):
+        if mouse_pos[0] > self.init_sqr[0]: # king side
+            pass
+        elif mouse_pos[0] < self.init_sqr[0]: # queen side
+            pass
+    
+    def check_check(self, sqr, other_pieces):
+        for i in other_pieces.sprites():
+            if sqr in i.move_rules(i.init_sqr, self.groups()[0]):
+                return True
                 
                 
 
