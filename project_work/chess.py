@@ -7,10 +7,10 @@ import sys
 
 ## to do list
 
-# checking preventing all other moves
 # castling
 # en passant
 # board setup based on team choice also changes pawn directions
+# pawn promotion
 
 # optional:
 
@@ -155,8 +155,6 @@ class Piece(pygame.sprite.Sprite):
     # updates the sprite
     def update(self, got_piece, mouse_pos, squares, other_pieces, screen, grave_pos):
         self.p_update()
-        if self.type == 'king':
-            print(self.check_check(self.init_sqr, other_pieces))
         if self.on_board and self.groups()[0].my_turn:
             if not got_piece or self.gotten:
                 self.drag(mouse_pos, screen, other_pieces)
@@ -166,13 +164,27 @@ class Piece(pygame.sprite.Sprite):
     def drop(self, mouse_pos, other_pieces, screen, graveyard):
         if not pygame.mouse.get_pressed()[0] and self.gotten:
             self.rect.topleft = (math.floor(mouse_pos[0]/64)*64,math.floor(mouse_pos[1]/64)*64)
-            if not self.collision(screen):
-                 # dont need to add 64, 64 because division does not define 1 as 0
+            for p in self.groups()[0].sprites():
+                if p.type == 'king':
+                    check_from_move = p.check_check(p.init_sqr, other_pieces)
+                        
+            if not self.collision(screen) and not check_from_move:
                 self.take(other_pieces, graveyard)
                 self.init_sqr = self.rect.topleft
                 self.groups()[0].my_turn = False
                 other_pieces.my_turn = True
                 self.has_moved = True
+                for p in other_pieces.sprites():
+                    if p.type == 'king':
+                        if p.check_check(self.init_sqr, self.groups()[0]):
+                            all_available_squares = []
+                            for i in p.move_rules(p.init_sqr, self.groups()[0]):
+                                if p.check_check(i, self.groups()[0]):
+                                    all_available_squares.append(True)
+                                else:
+                                    all_available_squares.append(False)
+                            if all(all_available_squares):
+                                other_pieces.game_active = False
             else:
                 self.rect.topleft = self.init_sqr
             
@@ -240,28 +252,28 @@ class pawn(Piece):
         self.type = 'pawn'
         super(pawn, self).__init__(colour, position, w_image_address, b_image_address)
     
-    def move_rules(self, sqr, other_pieces): # piecewise update function with specific piece rules
+    def move_rules(self, sqr, other_pieces, chk_list = False): # piecewise update function with specific piece rules
         available_sqrs = []
         pieces_list = other_pieces.sprites() + self.groups()[0].sprites()
         if self.colour == 'white':
-            if sqr[1]-64 >= 64 and sqr[1]-64 <= 512:
+            if sqr[1]-64 >= 64 and sqr[1]-64 <= 512: # standard forward move with first double move
                 if not square_occupation((sqr[0], sqr[1]-64), pieces_list, self):
                     available_sqrs.append((sqr[0], sqr[1]-64))
                     if sqr[1] == 448 and not square_occupation((sqr[0], sqr[1]-128), pieces_list, self):
                         available_sqrs.append((sqr[0], sqr[1]-128))
-            if square_occupation((sqr[0]-64, sqr[1]-64), other_pieces.sprites()):
+            if square_occupation((sqr[0]-64, sqr[1]-64), other_pieces.sprites()): # diagonal take
                 available_sqrs.append((sqr[0]-64, sqr[1]-64))
-            if square_occupation((sqr[0]+64, sqr[1]-64), other_pieces.sprites()):
+            if square_occupation((sqr[0]+64, sqr[1]-64), other_pieces.sprites()): # diagonal take
                 available_sqrs.append((sqr[0]+64, sqr[1]-64))
         elif self.colour == 'black':
             if sqr[1]+64 >= 64 and sqr[1]+64 <= 512:
-                if not square_occupation((sqr[0], sqr[1]+64), pieces_list, self):
+                if not square_occupation((sqr[0], sqr[1]+64), pieces_list, self): # standard forward move with first double move
                     available_sqrs.append((sqr[0], sqr[1]+64))
                     if sqr[1] == 128 and not square_occupation((sqr[0], sqr[1]+128), pieces_list, self):
                         available_sqrs.append((sqr[0], sqr[1]+128))
-            if square_occupation((sqr[0]+64, sqr[1]+64), other_pieces.sprites()):
+            if square_occupation((sqr[0]+64, sqr[1]+64), other_pieces.sprites()): # diagonal take
                 available_sqrs.append((sqr[0]+64, sqr[1]+64))
-            if square_occupation((sqr[0]-64, sqr[1]+64), other_pieces.sprites()):
+            if square_occupation((sqr[0]-64, sqr[1]+64), other_pieces.sprites()): # diagonal take
                 available_sqrs.append((sqr[0]-64, sqr[1]+64))
         return available_sqrs
     
@@ -273,39 +285,44 @@ class bishop(Piece):
         self.type = 'bishop'
         super(bishop, self).__init__(colour, position, w_image_address, b_image_address)
 
-    def move_rules(self, sqr, other_pieces): # piecewise update function with specific piece rules
+    def move_rules(self, sqr, other_pieces, chk_list = False): # piecewise update function with specific piece rules
+        if chk_list:
+            other_pieces_list = other_pieces
+        else:
+            other_pieces_list = other_pieces.sprites()
+        same_pieces_list = self.groups()[0].sprites()
         available_sqrs = []
         y1, y2, y3, y4 = True, True, True, True
         for j in range(0,9):
             if j:
                 if (sqr[0]+64*j <= 512 and sqr[0]+64*j >= 64) and (sqr[1]+64*j <= 512 and sqr[1]+64*j >= 64) and y1: 
-                    if square_occupation((sqr[0]+64*j, sqr[1]+64*j), self.groups()[0].sprites(), self):
+                    if square_occupation((sqr[0]+64*j, sqr[1]+64*j), same_pieces_list, self) and not chk_list:
                         y1 = False
-                    elif square_occupation((sqr[0]+64*j, sqr[1]+64*j), other_pieces.sprites()):
+                    elif square_occupation((sqr[0]+64*j, sqr[1]+64*j), other_pieces_list):
                         available_sqrs.append((sqr[0]+64*j, sqr[1]+64*j))
                         y1 = False
                     else: 
                         available_sqrs.append((sqr[0]+64*j, sqr[1]+64*j))
                 if (sqr[0]+64*j <= 512 and sqr[0]+64*j >= 64) and (sqr[1]-64*j <= 512 and sqr[1]-64*j >= 64) and y2:
-                    if square_occupation((sqr[0]+64*j, sqr[1]-64*j), self.groups()[0].sprites(), self):
+                    if square_occupation((sqr[0]+64*j, sqr[1]-64*j), same_pieces_list, self) and not chk_list:
                         y2 = False
-                    elif square_occupation((sqr[0]+64*j, sqr[1]-64*j), other_pieces.sprites()):
+                    elif square_occupation((sqr[0]+64*j, sqr[1]-64*j), other_pieces_list):
                         available_sqrs.append((sqr[0]+64*j, sqr[1]-64*j))
                         y2 = False
                     else: 
                         available_sqrs.append((sqr[0]+64*j, sqr[1]-64*j))
                 if (sqr[0]-64*j <= 512 and sqr[0]-64*j >= 64) and (sqr[1]-64*j <= 512 and sqr[1]-64*j >= 64) and y3:
-                    if square_occupation((sqr[0]-64*j, sqr[1]-64*j), self.groups()[0].sprites(), self):
+                    if square_occupation((sqr[0]-64*j, sqr[1]-64*j), same_pieces_list, self) and not chk_list:
                         y3 = False
-                    elif square_occupation((sqr[0]-64*j, sqr[1]-64*j), other_pieces.sprites()):
+                    elif square_occupation((sqr[0]-64*j, sqr[1]-64*j), other_pieces_list):
                         available_sqrs.append((sqr[0]-64*j, sqr[1]-64*j))
                         y3 = False
                     else:
                         available_sqrs.append((sqr[0]-64*j, sqr[1]-64*j))
                 if (sqr[0]-64*j <= 512 and sqr[0]-64*j >= 64) and (sqr[1]+64*j <= 512 and sqr[1]+64*j >= 64) and y4:
-                    if square_occupation((sqr[0]-64*j, sqr[1]+64*j), self.groups()[0].sprites(), self):
+                    if square_occupation((sqr[0]-64*j, sqr[1]+64*j), same_pieces_list, self) and not chk_list:
                         y4 = False
-                    elif square_occupation((sqr[0]-64*j, sqr[1]+64*j), other_pieces.sprites()):
+                    elif square_occupation((sqr[0]-64*j, sqr[1]+64*j), other_pieces_list):
                         available_sqrs.append((sqr[0]-64*j, sqr[1]+64*j))
                         y4 = False
                     else: 
@@ -321,7 +338,7 @@ class knight(Piece):
         self.type = 'knight'
         super(knight, self).__init__(colour, position, w_image_address, b_image_address)
         
-    def move_rules(self, sqr, other_pieces): # piecewise update function with specific piece rules
+    def move_rules(self, sqr, other_pieces, chk_list = False): # piecewise update function with specific piece rules
         available_sqrs = []
         for i in range(-1,2):
             for j in range(-1,2):
@@ -340,39 +357,44 @@ class rook(Piece):
         self.type = 'rook'
         super(rook, self).__init__(colour, position, w_image_address, b_image_address)
 
-    def move_rules(self, sqr, other_pieces): # piecewise update function with specific piece rules
+    def move_rules(self, sqr, other_pieces, chk_list = False): # piecewise update function with specific piece rules
+        if chk_list:
+            other_pieces_list = other_pieces
+        else:
+            other_pieces_list = other_pieces.sprites()
+        same_pieces_list = self.groups()[0].sprites()
         available_sqrs = []
         y1, y2, y3, y4 = True, True, True, True
         for j in range(0,9):
             if j:
                 if sqr[0]+64*j <= 512 and sqr[0]+64*j >= 64 and y1:
-                    if square_occupation((sqr[0]+64*j, sqr[1]), self.groups()[0].sprites(), self):
+                    if square_occupation((sqr[0]+64*j, sqr[1]), same_pieces_list, self) and not chk_list:
                         y1=False
-                    elif square_occupation((sqr[0]+64*j, sqr[1]), other_pieces.sprites()):
+                    elif square_occupation((sqr[0]+64*j, sqr[1]), other_pieces_list):
                         available_sqrs.append((sqr[0]+64*j, sqr[1]))
                         y1=False
                     else:
                         available_sqrs.append((sqr[0]+64*j, sqr[1]))
                 if sqr[1]+64*j <= 512 and sqr[1]+64*j >= 64 and y2:
-                    if square_occupation((sqr[0], sqr[1]+64*j), self.groups()[0].sprites(), self):
+                    if square_occupation((sqr[0], sqr[1]+64*j), same_pieces_list, self) and not chk_list:
                         y2=False
-                    elif square_occupation((sqr[0], sqr[1]+64*j), other_pieces.sprites()):
+                    elif square_occupation((sqr[0], sqr[1]+64*j), other_pieces_list):
                         available_sqrs.append((sqr[0], sqr[1]+64*j))
                         y2=False
                     else:
                         available_sqrs.append((sqr[0], sqr[1]+64*j))
                 if sqr[0]-64*j <= 512 and sqr[0]-64*j >= 64 and y3:
-                    if square_occupation((sqr[0]-64*j, sqr[1]), self.groups()[0].sprites(), self):
+                    if square_occupation((sqr[0]-64*j, sqr[1]), same_pieces_list, self) and not chk_list:
                         y3=False
-                    elif square_occupation((sqr[0]-64*j, sqr[1]), other_pieces.sprites()):
+                    elif square_occupation((sqr[0]-64*j, sqr[1]), other_pieces_list):
                         available_sqrs.append((sqr[0]-64*j, sqr[1]))
                         y3=False
                     else:
                         available_sqrs.append((sqr[0]-64*j, sqr[1]))
                 if sqr[1]-64*j <= 512 and sqr[1]-64*j >= 64 and y4:
-                    if square_occupation((sqr[0], sqr[1]-64*j), self.groups()[0].sprites(), self):
+                    if square_occupation((sqr[0], sqr[1]-64*j), same_pieces_list, self) and not chk_list:
                         y4=False
-                    elif square_occupation((sqr[0], sqr[1]-64*j), other_pieces.sprites()):
+                    elif square_occupation((sqr[0], sqr[1]-64*j), other_pieces_list):
                         available_sqrs.append((sqr[0], sqr[1]-64*j))
                         y4=False
                     else:    
@@ -387,39 +409,44 @@ class queen(Piece):
         self.type = 'queen'
         super(queen, self).__init__(colour, position, w_image_address, b_image_address)
         
-    def move_rules(self, sqr, other_pieces): # piecewise update function with specific piece rules
+    def move_rules(self, sqr, other_pieces, chk_list = False): # piecewise update function with specific piece rules
+        if chk_list:
+            other_pieces_list = other_pieces
+        else:
+            other_pieces_list = other_pieces.sprites()
+        same_pieces_list = self.groups()[0].sprites()
         available_sqrs = []
         y1, y2, y3, y4, y5, y6, y7, y8 = True, True, True, True, True, True, True, True
         for j in range(0,9):
             if j:
                 if sqr[0]+64*j <= 512 and sqr[0]+64*j >= 64 and y1:
-                    if square_occupation((sqr[0]+64*j, sqr[1]), self.groups()[0].sprites(), self):
+                    if square_occupation((sqr[0]+64*j, sqr[1]), same_pieces_list, self) and not chk_list:
                         y1=False
-                    elif square_occupation((sqr[0]+64*j, sqr[1]), other_pieces.sprites()):
+                    elif square_occupation((sqr[0]+64*j, sqr[1]), other_pieces_list):
                         available_sqrs.append((sqr[0]+64*j, sqr[1]))
                         y1=False
                     else:
                         available_sqrs.append((sqr[0]+64*j, sqr[1]))
                 if sqr[1]+64*j <= 512 and sqr[1]+64*j >= 64 and y2:
-                    if square_occupation((sqr[0], sqr[1]+64*j), self.groups()[0].sprites(), self):
+                    if square_occupation((sqr[0], sqr[1]+64*j), same_pieces_list, self) and not chk_list:
                         y2=False
-                    elif square_occupation((sqr[0], sqr[1]+64*j), other_pieces.sprites()):
+                    elif square_occupation((sqr[0], sqr[1]+64*j), other_pieces_list):
                         available_sqrs.append((sqr[0], sqr[1]+64*j))
                         y2=False
                     else:
                         available_sqrs.append((sqr[0], sqr[1]+64*j))
                 if sqr[0]-64*j <= 512 and sqr[0]-64*j >= 64 and y3:
-                    if square_occupation((sqr[0]-64*j, sqr[1]), self.groups()[0].sprites(), self):
+                    if square_occupation((sqr[0]-64*j, sqr[1]), same_pieces_list, self) and not chk_list:
                         y3=False
-                    elif square_occupation((sqr[0]-64*j, sqr[1]), other_pieces.sprites()):
+                    elif square_occupation((sqr[0]-64*j, sqr[1]), other_pieces_list):
                         available_sqrs.append((sqr[0]-64*j, sqr[1]))
                         y3=False
                     else:
                         available_sqrs.append((sqr[0]-64*j, sqr[1]))
                 if sqr[1]-64*j <= 512 and sqr[1]-64*j >= 64 and y4:
-                    if square_occupation((sqr[0], sqr[1]-64*j), self.groups()[0].sprites(), self):
+                    if square_occupation((sqr[0], sqr[1]-64*j), same_pieces_list, self) and not chk_list:
                         y4=False
-                    elif square_occupation((sqr[0], sqr[1]-64*j), other_pieces.sprites()):
+                    elif square_occupation((sqr[0], sqr[1]-64*j), other_pieces_list):
                         available_sqrs.append((sqr[0], sqr[1]-64*j))
                         y4=False
                     else:    
@@ -427,33 +454,33 @@ class queen(Piece):
                     
                     
                 if (sqr[0]+64*j <= 512 and sqr[0]+64*j >= 64) and (sqr[1]+64*j <= 512 and sqr[1]+64*j >= 64) and y5: 
-                    if square_occupation((sqr[0]+64*j, sqr[1]+64*j), self.groups()[0].sprites(), self):
+                    if square_occupation((sqr[0]+64*j, sqr[1]+64*j), same_pieces_list, self) and not chk_list:
                         y5 = False
-                    elif square_occupation((sqr[0]+64*j, sqr[1]+64*j), other_pieces.sprites()):
+                    elif square_occupation((sqr[0]+64*j, sqr[1]+64*j), other_pieces_list):
                         available_sqrs.append((sqr[0]+64*j, sqr[1]+64*j))
                         y5 = False
                     else: 
                         available_sqrs.append((sqr[0]+64*j, sqr[1]+64*j))
                 if (sqr[0]+64*j <= 512 and sqr[0]+64*j >= 64) and (sqr[1]-64*j <= 512 and sqr[1]-64*j >= 64) and y6:
-                    if square_occupation((sqr[0]+64*j, sqr[1]-64*j), self.groups()[0].sprites(), self):
+                    if square_occupation((sqr[0]+64*j, sqr[1]-64*j), same_pieces_list, self) and not chk_list:
                         y6 = False
-                    elif square_occupation((sqr[0]+64*j, sqr[1]-64*j), other_pieces.sprites()):
+                    elif square_occupation((sqr[0]+64*j, sqr[1]-64*j), other_pieces_list):
                         available_sqrs.append((sqr[0]+64*j, sqr[1]-64*j))
                         y6 = False
                     else: 
                         available_sqrs.append((sqr[0]+64*j, sqr[1]-64*j))
                 if (sqr[0]-64*j <= 512 and sqr[0]-64*j >= 64) and (sqr[1]-64*j <= 512 and sqr[1]-64*j >= 64) and y7:
-                    if square_occupation((sqr[0]-64*j, sqr[1]-64*j), self.groups()[0].sprites(), self):
+                    if square_occupation((sqr[0]-64*j, sqr[1]-64*j), same_pieces_list, self) and not chk_list:
                         y7 = False
-                    elif square_occupation((sqr[0]-64*j, sqr[1]-64*j), other_pieces.sprites()):
+                    elif square_occupation((sqr[0]-64*j, sqr[1]-64*j), other_pieces_list):
                         available_sqrs.append((sqr[0]-64*j, sqr[1]-64*j))
                         y7 = False
                     else:
                         available_sqrs.append((sqr[0]-64*j, sqr[1]-64*j))
                 if (sqr[0]-64*j <= 512 and sqr[0]-64*j >= 64) and (sqr[1]+64*j <= 512 and sqr[1]+64*j >= 64) and y8:
-                    if square_occupation((sqr[0]-64*j, sqr[1]+64*j), self.groups()[0].sprites(), self):
+                    if square_occupation((sqr[0]-64*j, sqr[1]+64*j), same_pieces_list, self) and not chk_list:
                         y8 = False
-                    elif square_occupation((sqr[0]-64*j, sqr[1]+64*j), other_pieces.sprites()):
+                    elif square_occupation((sqr[0]-64*j, sqr[1]+64*j), other_pieces_list):
                         available_sqrs.append((sqr[0]-64*j, sqr[1]+64*j))
                         y8 = False
                     else: 
@@ -468,16 +495,16 @@ class king(Piece):
         self.type = 'king'
         super(king, self).__init__(colour, position, w_image_address, b_image_address)
 
-    def move_rules(self, sqr, other_pieces): # specific piece rules
+    def move_rules(self, sqr, other_pieces, chk_list = False): # specific piece rules
         available_sqrs = []
-        pieces_list = other_pieces.sprites() + self.groups()[0].sprites()
         for i in range(-1,2):
             for j in range(-1,2):
                 if not i and not j:
                     pass
                 elif (sqr[0]+j*64 >= 64 and sqr[0]+j*64 <= 512) and (sqr[1]+i*64 >= 64 and sqr[1]+i*64 <= 512):
                     if not square_occupation((sqr[0]+j*64, sqr[1]+i*64), self.groups()[0].sprites(), self):
-                        available_sqrs.append((sqr[0]+j*64, sqr[1]+i*64))
+                        if not self.check_check((sqr[0]+j*64, sqr[1]+i*64), other_pieces):
+                            available_sqrs.append((sqr[0]+j*64, sqr[1]+i*64))
         return available_sqrs
     
     def p_update(self): # piecewise update function
@@ -491,8 +518,22 @@ class king(Piece):
             pass
     
     def check_check(self, sqr, other_pieces):
+        all_pieces = other_pieces.sprites() + self.groups()[0].sprites()
         for i in other_pieces.sprites():
-            if sqr in i.move_rules(i.init_sqr, self.groups()[0]):
+            if i.type == 'king':
+                for m in range(-1,2):
+                    for n in range(-1,2):
+                        if m and n:
+                            if (i.rect.topleft[0]+m*64, i.rect.topleft[1]+n*64) == sqr:
+                                return True
+                i.rect.topleft
+            elif i.type == 'pawn' and i.colour == 'black':
+                if (i.rect.topleft[0]+64, i.rect.topleft[1]+64) == sqr or (i.rect.topleft[0]-64, i.rect.topleft[1]+64) == sqr:
+                    return True
+            elif i.type == 'pawn' and i.colour == 'white':
+                if (i.rect.topleft[0]+64, i.rect.topleft[1]-64) == sqr or (i.rect.topleft[0]-64, i.rect.topleft[1]-64) == sqr:
+                    return True
+            elif sqr in i.move_rules(i.init_sqr, all_pieces, True):
                 return True
                 
                 
