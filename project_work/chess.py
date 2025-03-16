@@ -7,7 +7,6 @@ import sys
 
 ## to do list
 
-# castling
 # en passant
 # board setup based on team choice also changes pawn directions
 # pawn promotion
@@ -164,19 +163,50 @@ class Piece(pygame.sprite.Sprite):
     def drop(self, mouse_pos, other_pieces, screen, graveyard):
         if not pygame.mouse.get_pressed()[0] and self.gotten:
             self.rect.topleft = (math.floor(mouse_pos[0]/64)*64,math.floor(mouse_pos[1]/64)*64)
-            for p in self.groups()[0].sprites():
+            for p in self.groups()[0].sprites(): # checking move prevention loop
                 if p.type == 'king':
-                    check_from_move = p.check_check(p.init_sqr, other_pieces)
+                    if self.type == 'king': # moving the king out of check
+                        check_from_move = p.check_check(p.rect.topleft, other_pieces)
                         
+                    elif square_occupation(self.rect.topleft, other_pieces): # taking checking piece
+                        for piece in other_pieces.sprites():
+                            if piece.rect.collidepoint(self.rect.topleft):
+                                checking_candidates = other_pieces.sprites().copy()
+                                checking_candidates.remove(piece)
+                                check_from_move = p.check_check(p.init_sqr, checking_candidates, is_list = True)
+                        
+                    else: # blocking checking piece
+                        check_from_move = p.check_check(p.init_sqr, other_pieces)
+            if check_from_move:
+                self.urine_check(screen)
             if not self.collision(screen) and not check_from_move:
+                if self.type == 'king' and not self.has_moved:
+                    if self.rect.topleft[0] - self.init_sqr[0]<64 and abs(self.rect.topleft[0] - self.init_sqr[0]) > 64:
+                        for p in self.groups()[0].sprites():
+                            if p.type == 'rook' and not p.has_moved and p.init_sqr[0] < self.init_sqr[0]:
+                                p.rect.topleft = (self.rect.topleft[0]+64, self.init_sqr[1])
+                    if self.rect.topleft[0] - self.init_sqr[0]>64 and abs(self.rect.topleft[0] - self.init_sqr[0]) > 64:
+                        for p in self.groups()[0].sprites():
+                            if p.type == 'rook' and not p.has_moved and p.init_sqr[0] > self.init_sqr[0]:
+                                p.rect.topleft = (self.rect.topleft[0]-64, self.init_sqr[1])
+                            p.init_sqr = p.rect.topleft
+                            p.has_moved = True
+                                
                 self.take(other_pieces, graveyard)
                 self.init_sqr = self.rect.topleft
+                if self.type == 'pawn':
+                    if self.rect.topleft[1] == 64 and self.colour == 'white':
+                        self.promote(graveyard, screen)
+                    if self.rect.topleft[1] == 512 and self.colour == 'black':
+                        self.promote(graveyard, screen)
+                print(self.rect.topleft)
                 self.groups()[0].my_turn = False
                 other_pieces.my_turn = True
                 self.has_moved = True
+                self.groups()[0].in_check = False
                 for p in other_pieces.sprites():
                     if p.type == 'king':
-                        if p.check_check(self.init_sqr, self.groups()[0]):
+                        if p.check_check(p.init_sqr, self.groups()[0]):
                             all_available_squares = []
                             for i in p.move_rules(p.init_sqr, self.groups()[0]):
                                 if p.check_check(i, self.groups()[0]):
@@ -214,7 +244,27 @@ class Piece(pygame.sprite.Sprite):
         av_sqr_sur.fill((150,200,255))
         for sqr in self.available_squares:
             screen.blit(av_sqr_sur, sqr)
-        
+    
+    def urine_check(self, screen):
+        for p in self.groups()[0].sprites():
+            if p.type == 'king':
+                self.groups()[0].kg_sqr_sur =  pygame.Surface((64,64))
+                self.groups()[0].kg_sqr_sur.set_alpha(128)
+                self.groups()[0].kg_sqr_sur.fill((255,10,10))
+                self.groups()[0].king_sqr = p.init_sqr
+                # screen.blit(kg_sqr_sur, p.init_sqr)
+                self.groups()[0].in_check = True
+                
+                
+def in_check(group, screen):
+    screen.blit(group.kg_sqr_sur, group.king_sqr)
+
+def promotion_choice(group, screen, mouse_pos):
+    screen.blit(group.selection_surf, group.selection_pos)
+    selection_rect = group.selection_surf.get_rect(topleft = group.selection_pos)
+    if selection_rect.collidepoint(mouse_pos) and pygame.mouse.get_pressed()[0]:
+        group.chosen = 'queen'
+    
 def board_setup(positions, w_pieces, b_pieces):
     for x in range(8):
         w_pieces.add(pawn("white", positions[x][6], 'project_work/sprites/no_backgrounds/pawn_no_bg.png','project_work/sprites/no_backgrounds/b_pawn_no_bg.png'))
@@ -279,6 +329,27 @@ class pawn(Piece):
     
     def p_update(self): # piecewise update function
         pass
+    
+    def promote(self, graveyard, screen):
+        sqr = self.init_sqr
+        self.groups()[0].selection_surf = pygame.Surface((256, 64))
+        self.groups()[0].selection_surf.fill((180,180,180))
+        self.groups()[0].selection_pos = (sqr[0], sqr[1]+64)
+        if self.groups()[0].chosen:
+            graveyard.die(self)
+            if self.groups()[0].chosen == 'queen':
+                self.groups()[0].add(queen(self.colour, sqr, 'project_work/sprites/no_backgrounds/queen_no_bg.png','project_work/sprites/no_backgrounds/b_queen_no_bg.png'))
+                self.groups()[0].chosen = None
+            elif self.groups()[0].chosen == 'rook':
+                self.groups()[0].add(rook(self.colour, sqr, 'project_work/sprites/no_backgrounds/queen_no_bg.png','project_work/sprites/no_backgrounds/b_queen_no_bg.png'))
+                self.groups()[0].chosen = None
+            elif self.groups()[0].chosen == 'bishop':
+                self.groups()[0].add(bishop(self.colour, sqr, 'project_work/sprites/no_backgrounds/queen_no_bg.png','project_work/sprites/no_backgrounds/b_queen_no_bg.png'))
+                self.groups()[0].chosen = None
+            elif self.groups()[0].chosen == 'knight':
+                self.groups()[0].add(knight(self.colour, sqr, 'project_work/sprites/no_backgrounds/queen_no_bg.png','project_work/sprites/no_backgrounds/b_queen_no_bg.png'))
+                self.groups()[0].chosen = None
+        # self.groups()[0].add()
         
 class bishop(Piece):
     def __init__(self, colour: str, position: tuple, w_image_address: str, b_image_address: str):
@@ -343,9 +414,9 @@ class knight(Piece):
         for i in range(-1,2):
             for j in range(-1,2):
                 if i and j:
-                    if (sqr[0]+j*128 >= 64 and sqr[0]+j*128 <= 512) and (sqr[1]+i*64 >= 64 and sqr[1]+i*64 <= 512):
+                    if (sqr[0]+j*128 >= 64 and sqr[0]+j*128 <= 512) and (sqr[1]+i*64 >= 64 and sqr[1]+i*64 <= 512) and not square_occupation((sqr[0]+j*128, sqr[1]+i*64), self.groups()[0].sprites(), self):
                         available_sqrs.append((sqr[0]+j*128, sqr[1]+i*64))
-                    if (sqr[0]+j*64 >= 64 and sqr[0]+j*64 <= 512) and (sqr[1]+i*128 >= 64 and sqr[1]+i*128 <= 512):
+                    if (sqr[0]+j*64 >= 64 and sqr[0]+j*64 <= 512) and (sqr[1]+i*128 >= 64 and sqr[1]+i*128 <= 512) and not square_occupation((sqr[0]+j*64, sqr[1]+i*128), self.groups()[0].sprites(), self):
                         available_sqrs.append((sqr[0]+j*64, sqr[1]+i*128))
         return available_sqrs
     
@@ -505,6 +576,19 @@ class king(Piece):
                     if not square_occupation((sqr[0]+j*64, sqr[1]+i*64), self.groups()[0].sprites(), self):
                         if not self.check_check((sqr[0]+j*64, sqr[1]+i*64), other_pieces):
                             available_sqrs.append((sqr[0]+j*64, sqr[1]+i*64))
+        for p in self.groups()[0].sprites(): # castling
+            if p.type == 'rook' and not p.has_moved and not self.has_moved:
+                if p.init_sqr[0] < self.init_sqr[0]:
+                    if not square_occupation((self.init_sqr[0]-64, self.init_sqr[1]), self.groups()[0].sprites(), self) and not square_occupation((self.init_sqr[0]-64, self.init_sqr[1]), other_pieces):
+                        if not square_occupation((self.init_sqr[0]-128, self.init_sqr[1]), self.groups()[0].sprites(), self) and not square_occupation((self.init_sqr[0]-128, self.init_sqr[1]), other_pieces):
+                            if not square_occupation((self.init_sqr[0]-192, self.init_sqr[1]), self.groups()[0].sprites(), self) and not square_occupation((self.init_sqr[0]-192, self.init_sqr[1]), other_pieces):
+                                if not self.check_check((self.init_sqr[0]-64, self.init_sqr[1]), other_pieces) and not self.check_check((self.init_sqr[0]-128, self.init_sqr[1]), other_pieces) and not self.check_check((self.init_sqr[0]-192, self.init_sqr[1]), other_pieces):
+                                    available_sqrs.append((self.init_sqr[0]-128, self.init_sqr[1]))
+                if p.init_sqr[0] > self.init_sqr[0]:
+                    if not square_occupation((self.init_sqr[0]+64, self.init_sqr[1]), self.groups()[0].sprites(), self) and not square_occupation((self.init_sqr[0]+64, self.init_sqr[1]), other_pieces):
+                        if not square_occupation((self.init_sqr[0]+128, self.init_sqr[1]), self.groups()[0].sprites(), self) and not square_occupation((self.init_sqr[0]+128, self.init_sqr[1]), other_pieces):
+                            if not self.check_check((self.init_sqr[0]+64, self.init_sqr[1]), other_pieces) and not self.check_check((self.init_sqr[0]+128, self.init_sqr[1]), other_pieces):
+                                available_sqrs.append((self.init_sqr[0]+128, self.init_sqr[1]))
         return available_sqrs
     
     def p_update(self): # piecewise update function
@@ -512,14 +596,20 @@ class king(Piece):
             self.groups()[0].game_active = False
 
     def castle(self, mouse_pos, other_pieces):
-        if mouse_pos[0] > self.init_sqr[0]: # king side
-            pass
-        elif mouse_pos[0] < self.init_sqr[0]: # queen side
-            pass
+        # if mouse_pos[0] > self.init_sqr[0]: # king side
+        #     pass
+        # elif mouse_pos[0] < self.init_sqr[0]: # queen side
+        #     pass
+        pass
     
-    def check_check(self, sqr, other_pieces):
-        all_pieces = other_pieces.sprites() + self.groups()[0].sprites()
-        for i in other_pieces.sprites():
+    def check_check(self, sqr, other_pieces, is_list =  False):
+        if is_list:
+            checking_candidates = other_pieces
+            all_pieces = other_pieces + self.groups()[0].sprites()
+        else:
+            checking_candidates = other_pieces.sprites()
+            all_pieces = other_pieces.sprites() + self.groups()[0].sprites()
+        for i in checking_candidates:
             if i.type == 'king':
                 for m in range(-1,2):
                     for n in range(-1,2):
@@ -574,6 +664,8 @@ def main(time_between_games = 0):
     exit = False
     w_pieces.game_active = True
     b_pieces.game_active = True
+    w_pieces.in_check = False
+    b_pieces.in_check = False
     w_timer = Timer(w_timer_pos, w_pieces, time_between_games)
     b_timer = Timer(b_timer_pos, b_pieces, time_between_games)
     W_Timers = pygame.sprite.Group()
@@ -600,6 +692,10 @@ def main(time_between_games = 0):
             squares.update(mouse_pos)
             w_pieces.update(got_piece, mouse_pos, squares, b_pieces, screen, graveyard)
             b_pieces.update(got_piece, mouse_pos, squares, w_pieces, screen, graveyard)
+            if w_pieces.in_check:
+                in_check(w_pieces, screen)
+            if b_pieces.in_check:
+                in_check(b_pieces, screen)
             W_Timers.update(chess_font_sml, w_pieces, screen, time_passed)
             B_Timers.update(chess_font_sml, b_pieces, screen, time_passed)
             got_piece = pygame.mouse.get_pressed()[0]
