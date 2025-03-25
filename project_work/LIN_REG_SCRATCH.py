@@ -29,7 +29,7 @@ def expected_val_func(X, Y, k):
 
 
 
-def plot_overlayed(X, Y, Y_expected, Y_hat, k):
+def plot_overlayed(X, Y, Y_hat):
     # create a scatter plot of X and Y and then add line graph of expected_val_func(X, Y)
     plt.figure(figsize=(10, 6))
     plt.xlim(0, 100)
@@ -43,7 +43,7 @@ def plot_overlayed(X, Y, Y_expected, Y_hat, k):
 
     # Add a line graph with the same x but different y values
     plt.plot(X, Y_hat, color='red', label='Linear Regression Line')
-    plt.plot(X, Y_expected, color='red', label=f'K-nearest-neighbor Regression Line k={k}')
+    # plt.plot(X, Y_expected, color='red', label=f'K-nearest-neighbor Regression Line k={k}')
     # Add a legend
     plt.legend()
 
@@ -92,25 +92,25 @@ def beta_estimate_demonstration(X, Y, num_points = 100):
     beta_grid = np.meshgrid(beta_0_estimates, beta_1_estimates)
     return RSS, beta_grid
 
-if __name__ == '__main__':
-    # change this to be noisy data with a linear pattern
-    X = np.random.randint(0, 100, 100)
-    Y = np.random.randint(0, 100, 100)
-    X.sort()
-    Y.sort()
+# takes an input array of X and the real data points Y_k and returns a linear function of X to Y_hat
+def regression(X, Y_k):
+    
+    return
 
-    # print(X)
-    # Y_expected, k = expected_val_func(X, Y, k=10)
-    # # plot_overlayed(X, Y, Y_expected)
-    Y_hat, beta_hat_1, beta_hat_0 = linear_regression(X, Y)
-    # plot_overlayed(X, Y, Y_hat, Y_expected, k)
-    # print(Y_hat)
-    RSS, beta_grid = beta_estimate_demonstration(X, Y)
-    fig = plt.figure(figsize=(10, 6))
-    ax = fig.add_subplot(111, projection='3d')
-    ax.plot_surface(beta_grid[0], beta_grid[1], RSS, cmap='viridis')
-    ax.scatter(beta_hat_0, beta_hat_1, 0, color='red')
-    ax.set_xlabel('Beta_0')
-    ax.set_ylabel('Beta_1')
-    ax.set_zlabel('RSS')
-    plt.show()
+def l_2_norm(Y_hat, Y_k):
+    E_2 = 0
+    for i, val in enumerate(Y_k):
+        E_2 += abs(Y_hat[i] - val)**2
+    E_2 /= len(Y_k)
+    return np.sqrt(E_2)
+
+
+def main():
+    x = np.array([1,2,3,4,5])
+    y = np.array([3,4,5,6,7])
+    mse = l_2_norm(x, y)
+    print(x)
+    print(y)
+    print(mse)
+if __name__ == '__main__':
+    main()
